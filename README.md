@@ -160,9 +160,11 @@ php flarum cache:clear
 
 ## Support
 
-Questions and ideas are welcome on the
-[support forum](https://ernestdefoe.online) and in
-[GitHub issues](https://github.com/ernestdefoe/festoon/issues).
+Questions and ideas are welcome in the
+[support thread](https://ernestdefoe.online/d/213), on
+[Discuss](https://discuss.flarum.org/d/40251) and in
+[GitHub issues](https://github.com/ernestdefoe/festoon/issues). See it running on the
+[showcase forum](https://ernestdefoe.dev).
 
 ☕ If you like the things I have built, consider [buying me a coffee](https://buymeacoffee.com/ernestdefoe).
 
