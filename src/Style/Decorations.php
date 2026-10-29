@@ -43,7 +43,10 @@ final class Decorations
                 // header is the slide-out drawer, so it hangs from the top bar.
                 $css .= $on.'.App-header::after,'.$on.'.App-navigation::after{content:"";position:absolute;left:0;right:0;top:100%;height:'.Art::GARLAND_HEIGHT.'px;pointer-events:none;z-index:2}'
                     .'@media (max-width:767.98px){'.$on.'.App-header::after{display:none}}'
-                    .'@media (min-width:768px){'.$on.'.App-navigation::after{display:none}}';
+                    .'@media (min-width:768px){'.$on.'.App-navigation::after{display:none}}'
+                    // ESPN CFB Ticker sits 36px tall right under the top bar;
+                    // hang the garland below it rather than across the scores.
+                    .$on.'.has-cfb-ticker-top .App-header::after,'.$on.'.has-cfb-ticker-top .App-navigation::after{top:calc(100% + 36px)}';
                 $bg($on.'.App-header::after,'.$on.'.App-navigation::after', $garland, 960, Art::GARLAND_HEIGHT, '0 0/960px '.Art::GARLAND_HEIGHT.'px repeat-x');
             }
 

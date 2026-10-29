@@ -20,9 +20,14 @@ class DecorationsTest extends TestCase
             if ($look->get('effect') !== 'none' || $look->get('garland') !== 'none') {
                 $this->assertStringContainsString('prefers-reduced-motion:reduce', $css, $id);
             }
-            // Every decoration is behind the member's own switch.
-            foreach (['.App-header::after', '.WelcomeHero::before', '.Post-side::before', '.Bespoke-widget::after'] as $piece) {
-                $this->assertSame(substr_count($css, $piece), substr_count($css, 'html:not(.Festoon-off) '.($piece === '.Post-side::before' ? '.CommentPost ' : '').$piece), "$id $piece");
+            // Every selector that decorates something is behind the member's own switch.
+            preg_match_all('/(?:^|[{}])([^{}@]+)\{/', $css, $m);
+            foreach ($m[1] as $list) {
+                foreach (explode(',', $list) as $selector) {
+                    if (preg_match('/(App-header|App-navigation|WelcomeHero|Post-side|PostUser-name|Bespoke-widget|FofWidgets|PostStream-item|Header-title|newDiscussion|SplitDropdown)/', $selector)) {
+                        $this->assertStringContainsString(':not(.Festoon-off)', $selector, "$id: $selector");
+                    }
+                }
             }
             $this->assertLessThan(4096, strlen(gzencode($css, 6)), "$id stylesheet, gzipped");
         }
