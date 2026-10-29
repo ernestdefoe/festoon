@@ -67,20 +67,31 @@ class FestoonTest extends TestCase
         $this->assertStringNotContainsString('ernestdefoe-festoon/', $html);
     }
 
-    /** Choosing and drawing today's look must not cost a single query. */
+    /**
+     * Choosing and drawing today's look must not cost a single query.
+     *
+     * Core does some writes on a timer (last seen, token activity), so one
+     * request can carry a few more queries than the next for reasons that
+     * have nothing to do with Festoon. Each state is measured three times and
+     * the lowest count compared.
+     */
     public function test_no_queries_of_its_own(): void
     {
         $count = function (string $enabled, int $as) {
             $this->setting('ernestdefoe-festoon.enabled', $enabled);
             $this->page($as); // warm the decoration file and caches
             $db = $this->database();
-            $db->flushQueryLog();
-            $db->enableQueryLog();
-            $this->page($as);
-            $n = count($db->getQueryLog());
-            $db->disableQueryLog();
+            $counts = [];
 
-            return $n;
+            for ($i = 0; $i < 3; $i++) {
+                $db->flushQueryLog();
+                $db->enableQueryLog();
+                $this->page($as);
+                $counts[] = count($db->getQueryLog());
+                $db->disableQueryLog();
+            }
+
+            return min($counts);
         };
 
         foreach ([1, 2] as $as) {
