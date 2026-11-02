@@ -111,13 +111,29 @@ class InjectFestoon
     {
         $hash = substr(md5(@filemtime($source).'-'.@filesize($source)), 0, 10);
 
-        return $this->store($name, "$hash.$ext", fn () => (string) file_get_contents($source));
+        return $this->store($name, "$hash.$ext", function () use ($source) {
+            $contents = @file_get_contents($source);
+
+            // A missing build must fail loudly, not publish an empty file that
+            // every visitor would then be served until the next update.
+            if ($contents === false || $contents === '') {
+                throw new \RuntimeException("Festoon cannot read $source");
+            }
+
+            return $contents;
+        });
     }
 
     /**
      * Write a file to assets/ once, the first time a page needs it, and return
      * its URL. Writing a new version removes the old ones of the same name, so
      * changing a look's settings does not leave a trail of stale files.
+     *
+     * Two first requests at once may both write: the name is a hash of the
+     * contents, so they write the same bytes to the same path, and a delete
+     * of an already-deleted old version is a no-op. The current file is never
+     * among the ones cleared, so neither request removes what the other just
+     * wrote. No lock is needed.
      */
     protected function store(string $name, string $suffix, callable $contents): string
     {
@@ -126,7 +142,7 @@ class InjectFestoon
 
         if (! $this->assets->exists($path)) {
             foreach ($this->assets->files($dir) as $old) {
-                if (str_starts_with(basename($old), "$name-") && preg_match('/^[0-9a-f]{10}\./', substr(basename($old), strlen($name) + 1))) {
+                if ($old !== $path && str_starts_with(basename($old), "$name-") && preg_match('/^[0-9a-f]{10}\./', substr(basename($old), strlen($name) + 1))) {
                     $this->assets->delete($old);
                 }
             }

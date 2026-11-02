@@ -6,6 +6,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Ernestdefoe\Festoon\Calendar\Dates;
 use Ernestdefoe\Festoon\Config;
+use Illuminate\Contracts\Cache\Repository;
 
 /**
  * Which look the forum wears on a given day.
@@ -20,10 +21,10 @@ class Schedule
     protected DateTimeZone $tz;
     protected Dates $dates;
 
-    public function __construct(protected Config $config)
+    public function __construct(protected Config $config, ?Repository $cache = null)
     {
         $this->tz = new DateTimeZone($config->timezone());
-        $this->dates = new Dates($this->tz);
+        $this->dates = new Dates($this->tz, $cache);
     }
 
     public function today(): DateTimeImmutable

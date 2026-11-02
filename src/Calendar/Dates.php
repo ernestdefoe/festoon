@@ -4,6 +4,7 @@ namespace Ernestdefoe\Festoon\Calendar;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Illuminate\Contracts\Cache\Repository;
 use IntlCalendar;
 
 /**
@@ -24,10 +25,16 @@ use IntlCalendar;
  */
 class Dates
 {
+    /** Rules cheap enough to work out on every request; the rest walk a year or the moon. */
+    protected const CHEAP = ['date', 'easter', 'weekday'];
+
     /** @var array<string, ?string> "type|params|year" => "Y-m-d" */
     protected array $memo = [];
 
-    public function __construct(protected DateTimeZone $tz)
+    /** @var array<string, ?string>|null the slow dates, as kept in the cache store; null until read */
+    protected ?array $stored = null;
+
+    public function __construct(protected DateTimeZone $tz, protected ?Repository $cache = null)
     {
     }
 
@@ -35,14 +42,35 @@ class Dates
     public function on(array $rule, int $year): ?DateTimeImmutable
     {
         $key = json_encode($rule).'|'.$year;
+        $slow = ! in_array($rule['type'] ?? null, self::CHEAP, true);
+
+        // The world calendars cost a few milliseconds to resolve, and the answer
+        // never changes, so they are kept in the cache store across requests:
+        // one read per request, and a write only when a new date was worked out.
+        if ($slow && $this->stored === null) {
+            $this->stored = (array) $this->cache?->get($this->cacheKey(), []);
+            $this->memo += $this->stored;
+        }
 
         if (! array_key_exists($key, $this->memo)) {
             $this->memo[$key] = $this->compute($rule, $year);
+
+            if ($slow) {
+                $this->stored[$key] = $this->memo[$key];
+                // A month, so years gone by and edited custom holidays fall away.
+                $this->cache?->put($this->cacheKey(), $this->stored, 60 * 60 * 24 * 30);
+            }
         }
 
         $ymd = $this->memo[$key];
 
         return $ymd === null ? null : new DateTimeImmutable($ymd, $this->tz);
+    }
+
+    /** Changes with this code, so an update that corrects a date is not served a stale one. */
+    protected function cacheKey(): string
+    {
+        return 'ernestdefoe-festoon.dates.'.substr(md5(@filemtime(__FILE__).'-'.@filemtime(__DIR__.'/Astronomy.php')), 0, 8);
     }
 
     /** @param array<string, mixed> $rule */
