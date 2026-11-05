@@ -26,6 +26,7 @@ final class Art
         'bt' => '.bt{transform-box:fill-box;transform-origin:50% 50%;animation:bt 1.4s ease-in-out infinite}@keyframes bt{0%,60%,100%{transform:none}15%{transform:scale(1.18)}45%{transform:scale(1.1)}}',
         'sp' => '.sp{transform-box:fill-box;transform-origin:50% 50%;animation:sp 2.2s ease-in-out infinite}@keyframes sp{0%,100%{transform:none}50%{transform:scale(.55) rotate(45deg);opacity:.5}}',
         'rt' => '.rt{transform-box:fill-box;transform-origin:50% 50%;animation:rt 9s linear infinite}@keyframes rt{to{transform:rotate(360deg)}}',
+        'gr' => '.gr{transform-box:fill-box;transform-origin:50% 100%;animation:gr 3s ease-in-out infinite}@keyframes gr{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}',
         'bb' => '.bb{transform-box:fill-box;transform-origin:50% 0;animation:bb 4s ease-in-out infinite}@keyframes bb{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}',
     ];
 
@@ -96,6 +97,7 @@ final class Art
             'lanterns' => self::swag('#8b1a1a', fn ($x, $y, $i) => "<g class='sw' {$d($i, .8, 3.2)}>".self::lantern($x, $y).'</g>', 160, [.5], 14),
             'diyas' => self::swag('#8d5524', fn ($x, $y, $i) => self::diya($x, $y, $d($i, .17, .9)), 120, [.25, .5, .75], 16),
             'beads' => self::swag('#90a4ae', fn ($x, $y, $i) => "<circle class='tw' style='animation-duration:2.4s;animation-delay:-".sprintf('%.2f', fmod($i * .53, 2.4))."s' cx='$x' cy='".($y + 5)."' r='3.4' fill='".($i % 2 ? '#1565c0' : '#cfd8dc')."' stroke='#78909c' stroke-width='.5'/>", 120, [.17, .33, .5, .67, .83]),
+            'tulips' => self::swag('#558b2f', fn ($x, $y, $i) => "<g transform='translate($x ".($y + 1).")'><g class='sw' {$d($i, .55, 3.2)}>".($i % 3 === 1 ? self::hyacinth($i % 2 ? '#7e57c2' : '#9575cd') : self::tulip(['#e53935', '#f06292', '#e53935', '#ffb300'][$i % 4])).'</g></g>'),
             'fanous' => self::swag('#a0884a', fn ($x, $y, $i) => "<g class='sw' {$d($i, .8, 3.2)}><line x1='$x' y1='$y' x2='$x' y2='".($y + 3)."' stroke='#a0884a'/><path d='M".($x - 4).' '.($y + 3).' L'.($x + 4).' '.($y + 3).' L'.($x + 6).' '.($y + 10).' L'.($x + 3).' '.($y + 18).' L'.($x - 3).' '.($y + 18).' L'.($x - 6).' '.($y + 10)." Z' fill='".($i % 2 ? '#c9a227' : '#00796b')."'/><rect class='tw' style='animation-duration:2s' x='".($x - 2)."' y='".($y + 7)."' width='4' height='7' fill='#ffe082'/></g>", 160, [.5], 14),
             default => null,
         };
@@ -112,6 +114,7 @@ final class Art
             'leaves' => implode('', array_map(fn ($p, $i) => "<g transform='translate($p[0] $p[1]) rotate($p[2])'>".self::leaf($p[3], 'sw', self::d($i, .9, 3.2)).'</g>', [[10, 6, -20, '#c2551b'], [24, 12, 30, '#d98a1e'], [36, 4, 5, '#9e3d12']], [0, 1, 2])),
             'menorah' => "<g transform='translate(2 8)' fill='#1565c0'>".implode('', array_map(fn ($i) => "<rect x='".($i * 5)."' y='".($i === 4 ? 0 : 4)."' width='2' height='".($i === 4 ? 20 : 16)."'/><path class='fk' ".self::d($i, .13, .9)." d='M".($i * 5 + 1).' '.($i === 4 ? -5 : -1)." q2 2 0 4 q-2 -2 0 -4z' fill='#f2b705'/>", range(0, 8)))."<rect x='-1' y='20' width='44' height='2.5'/><rect x='19' y='20' width='4' height='7'/><rect x='13' y='26' width='16' height='2.5'/></g>",
             'crescent' => "<g transform='translate(18 18)'>".self::crescent().'</g>',
+            'sabzeh' => "<g transform='translate(24 0)'>".self::sabzeh().'</g>',
             default => null,
         };
     }
@@ -135,6 +138,7 @@ final class Art
             'egg' => "<g class='bb' style='transform-origin:50% 100%'><ellipse cx='17' cy='18' rx='9' ry='12' fill='#b3e5fc' stroke='#7e57c2' stroke-width='.8'/><path d='M8.5 16 Q13 12 17 16 T25.5 16' stroke='#f06292' stroke-width='2' fill='none'/><path d='M9 22 h16' stroke='#9ccc65' stroke-width='2'/></g>",
             'sun' => "<g transform='translate(17 17)'><circle r='7' fill='#ffb300'/><g class='rt' style='animation-duration:24s'>".implode('', array_map(fn ($i) => sprintf("<line x1='%.1f' y1='%.1f' x2='%.1f' y2='%.1f' stroke='#ffb300' stroke-width='2' stroke-linecap='round'/>", cos($i * M_PI / 4) * 10, sin($i * M_PI / 4) * 10, cos($i * M_PI / 4) * 14, sin($i * M_PI / 4) * 14), range(0, 7))).'</g></g>',
             'blossom' => "<path d='M2 30 Q16 20 32 22' stroke='#6d4c41' stroke-width='2' fill='none'/><g transform='translate(12 21)'><g class='bt' style='animation-duration:3s'>".self::blossom()."</g></g><g transform='translate(25 18)'>".self::blossom().'</g>',
+            'hyacinth' => "<g transform='translate(10 2)'><g class='gr'><path d='M2 22 V8' stroke='#558b2f' stroke-width='1.6'/>".self::hyacinth('#7e57c2')."</g><path d='M-4 22 h12 l-2 9 h-8 z' fill='#00838f'/></g><g transform='translate(25 24)'><g class='bb' style='transform-origin:50% 100%'><ellipse rx='5.5' ry='7' fill='#ffcdd2' stroke='#e53935' stroke-width='.7'/><path d='M-5 -1 q2.5 -3 5 0 t5 0' stroke='#00838f' stroke-width='1.4' fill='none'/></g></g>",
             default => null,
         };
     }
@@ -215,6 +219,35 @@ final class Art
     private static function crescent(): string
     {
         return "<path d='M3 -10.5 A11 11 0 1 0 9.5 5 A9.5 9.5 0 1 1 3 -10.5 Z' fill='#c9a227'/><g transform='translate(12 -6) scale(.5)'>".self::star('#c9a227', 'sp', '').'</g>';
+    }
+
+    /** A tulip head on a short stem, hanging from the garland wire. */
+    private static function tulip(string $fill): string
+    {
+        return "<path d='M0 0 V5' stroke='#558b2f' stroke-width='1.2'/><path d='M-5 6 Q-5 15 0 15 Q5 15 5 6 L2.5 9 L0 5 L-2.5 9 Z' fill='$fill'/>";
+    }
+
+    /** A hyacinth (sonbol) spike: a column of small florets. */
+    private static function hyacinth(string $fill): string
+    {
+        $s = "<g fill='$fill'>";
+        foreach ([[0, 2], [-2.4, 4.5], [2.4, 4.5], [0, 6.5], [-2.4, 9], [2.4, 9], [0, 11], [-1.6, 13.5], [1.6, 13.5]] as [$x, $y]) {
+            $s .= "<circle cx='$x' cy='$y' r='1.9'/>";
+        }
+
+        return $s.'</g>';
+    }
+
+    /** Sabzeh: sprouted wheatgrass in a turquoise dish, tied with a red ribbon. 24 wide, centred on 0. */
+    private static function sabzeh(): string
+    {
+        $blades = '';
+        foreach (range(-9, 9, 2) as $i => $x) {
+            $h = 12 + ($i * 7) % 6;
+            $blades .= sprintf("<path class='gr' %s d='M%d 24 Q%.1f %d %.1f %d' stroke='%s' stroke-width='1.6' fill='none' stroke-linecap='round'/>", self::d($i, .37, 3), $x, $x + 1.5, 24 - $h / 2, $x + ($i % 2 ? 2 : -2), 24 - $h, $i % 3 ? '#7cb342' : '#558b2f');
+        }
+
+        return $blades."<path d='M-12 23 h24 q-1 9 -12 9 q-11 0 -12 -9 z' fill='#00838f'/><path d='M-11.5 26 h23' stroke='#e53935' stroke-width='2'/>";
     }
 
     private static function blossom(): string

@@ -18,6 +18,7 @@ use IntlCalendar;
  *   ['type' => 'hebrew', 'month' => 3, 'day' => 25]         Hebrew calendar, months counted from Tishrei = 1
  *   ['type' => 'islamic', 'month' => 9, 'day' => 1]         Islamic calendar (Umm al-Qura), Muharram = 1
  *   ['type' => 'diwali']                                     Lakshmi Puja, from the moon
+ *   ['type' => 'nowruz']                                     Persian New Year, from the March equinox
  *
  * The Chinese, Hebrew and Islamic dates come from ICU (ext-intl), which carries
  * those calendars properly — leap months included — rather than a table that
@@ -26,7 +27,7 @@ use IntlCalendar;
 class Dates
 {
     /** Rules cheap enough to work out on every request; the rest walk a year or the moon. */
-    protected const CHEAP = ['date', 'easter', 'weekday'];
+    protected const CHEAP = ['date', 'easter', 'weekday', 'nowruz'];
 
     /** @var array<string, ?string> "type|params|year" => "Y-m-d" */
     protected array $memo = [];
@@ -86,6 +87,7 @@ class Dates
             'hebrew' => $this->icu('hebrew', $year, $int('month', 1) - 1, $int('day', 1)),
             'islamic' => $this->icu('islamic-umalqura', $year, $int('month', 1) - 1, $int('day', 1)),
             'diwali' => self::diwali($year),
+            'nowruz' => self::nowruz($year),
             default => null,
         };
     }
@@ -167,6 +169,22 @@ class Dates
         }
 
         return null;
+    }
+
+    /**
+     * Nowruz, 1 Farvardin: the day of the March equinox if the equinox comes
+     * before noon in Tehran, otherwise the day after. This is the rule Iran's
+     * official calendar uses. Noon is apparent (sundial) noon on the 52.5°E
+     * meridian Iran Standard Time is set to: 12:00 at UTC+3:30, plus the 7½
+     * minutes the sun runs late around the equinox. So 2025's equinox at 12:31
+     * Tehran time made March 21 Nowruz, and 2029's at 11:31 makes it March 20.
+     */
+    public static function nowruz(int $year): string
+    {
+        $equinox = Astronomy::marchEquinox($year);
+        $noon = gmmktime(8, 37, 30, 3, (int) gmdate('j', $equinox + 12600), $year);
+
+        return gmdate('Y-m-d', $equinox + 12600 + ($equinox < $noon ? 0 : 86400));
     }
 
     /**

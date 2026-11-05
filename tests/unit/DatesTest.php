@@ -32,6 +32,9 @@ class DatesTest extends TestCase
         $add('Hanukkah', ['type' => 'hebrew', 'month' => 3, 'day' => 25], [2023 => '2023-12-08', 2024 => '2024-12-26', 2025 => '2025-12-15', 2026 => '2026-12-05']);
         $add('Ramadan', ['type' => 'islamic', 'month' => 9, 'day' => 1], [2024 => '2024-03-11', 2025 => '2025-03-01', 2026 => '2026-02-18']);
         $add('Eid al-Fitr', ['type' => 'islamic', 'month' => 10, 'day' => 1], [2024 => '2024-04-10', 2025 => '2025-03-30', 2026 => '2026-03-20']);
+        // 1 Farvardin as Iran's official calendar has it. 2025 is the close one:
+        // the equinox came at 12:31 Tehran time, just after noon, so March 21.
+        $add('Nowruz', ['type' => 'nowruz'], [2016 => '2016-03-20', 2017 => '2017-03-21', 2019 => '2019-03-21', 2020 => '2020-03-20', 2021 => '2021-03-21', 2023 => '2023-03-21', 2024 => '2024-03-20', 2025 => '2025-03-21', 2026 => '2026-03-21', 2027 => '2027-03-21', 2028 => '2028-03-20', 2029 => '2029-03-20', 2030 => '2030-03-21']);
         $add('Leap day in a common year', ['type' => 'date', 'md' => '02-29'], [2026 => '2026-02-28', 2028 => '2028-02-29']);
 
         return $cases;
@@ -43,6 +46,17 @@ class DatesTest extends TestCase
         $dates = new Dates(new DateTimeZone('UTC'));
 
         $this->assertSame($expected, $dates->on($rule, $year)?->format('Y-m-d'));
+    }
+
+    /** ICU's Persian calendar is arithmetic, but it agrees with the equinox rule for well over a century. */
+    public function test_nowruz_agrees_with_the_persian_calendar(): void
+    {
+        $persian = \IntlCalendar::createInstance('UTC', 'en_US@calendar=persian');
+
+        for ($year = 1980; $year <= 2120; $year++) {
+            $persian->setTime(strtotime(Dates::nowruz($year).' 12:00 UTC') * 1000.0);
+            $this->assertSame([0, 1], [$persian->get(\IntlCalendar::FIELD_MONTH), $persian->get(\IntlCalendar::FIELD_DAY_OF_MONTH)], "Nowruz $year");
+        }
     }
 
     public function test_an_unknown_rule_has_no_date(): void

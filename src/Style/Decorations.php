@@ -51,7 +51,7 @@ final class Decorations
             }
 
             if ($ornament = Art::ornament($look->get('ornament'))) {
-                $css .= $on.'.Header-title::after{content:"";display:inline-block;width:48px;height:36px;margin-left:6px;vertical-align:middle;pointer-events:none}';
+                $css .= $on.'.Header-title::after{content:"";display:inline-block;width:48px;height:36px;margin-inline-start:6px;vertical-align:middle;pointer-events:none}';
                 $bg($on.'.Header-title::after', $ornament, 48, 36, 'center/contain no-repeat');
             }
         }
@@ -67,7 +67,7 @@ final class Decorations
             // opening post get the same piece, tucked into the top-right corner.
             $widget = $on.'.Bespoke-widget::after,'.$on.'.FofWidgets-WidgetSection>*::after,'.$on.'.PostStream-item[data-number="1"] .CommentPost::after';
             $css .= $on.'.FofWidgets-WidgetSection>*,'.$on.'.PostStream-item[data-number="1"] .CommentPost{position:relative}'
-                .$widget.'{content:"";position:absolute;top:-10px;right:-6px;width:34px;height:34px;pointer-events:none;z-index:1}';
+                .$widget.'{content:"";position:absolute;top:-10px;inset-inline-end:-6px;width:34px;height:34px;pointer-events:none;z-index:1}';
 
             // A small one in the middle of each divider between posts.
             $divider = $on.'.PostStream-item:has(+.PostStream-item)::after';

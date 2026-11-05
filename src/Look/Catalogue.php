@@ -14,7 +14,9 @@ namespace Ernestdefoe\Festoon\Look;
  * of the administrator's own (30) beats both. Between equals, the shorter
  * window wins, so a one-day holiday is never hidden by a month-long one.
  *
- * Hats are left off the religious holidays on purpose.
+ * Hats are left off the religious and cultural new-year holidays on purpose.
+ *
+ * Nowruz runs from the day before 1 Farvardin through Sizdah Bedar, the 13th.
  */
 final class Catalogue
 {
@@ -110,6 +112,11 @@ final class Catalogue
                 'primary' => '#00695c', 'secondary' => '#c9a227', 'garland' => 'fanous', 'ornament' => 'crescent',
                 'corner' => 'crescent', 'hat' => 'none', 'trim' => $stripe('#c9a227', '#00695c'), 'effect' => 'none',
             ],
+            'nowruz' => [
+                'group' => 'world', 'date' => ['type' => 'nowruz'], 'before' => 1, 'after' => 12,
+                'primary' => '#00838f', 'secondary' => '#7cb342', 'garland' => 'tulips', 'ornament' => 'sabzeh',
+                'corner' => 'hyacinth', 'hat' => 'none', 'trim' => $stripe('#00838f', '#7cb342'), 'effect' => 'petals',
+            ],
         ];
     }
 
@@ -129,9 +136,9 @@ final class Catalogue
     }
 
     // What each decoration slot may hold — anything else stored is treated as "none".
-    public const GARLANDS = ['none', 'lights', 'hearts', 'shamrocks', 'eggs', 'bunting-usa', 'bunting-halloween', 'leaves', 'snowflakes', 'lanterns', 'diyas', 'beads', 'fanous'];
-    public const ORNAMENTS = ['none', 'sparkles', 'bat', 'blossom', 'sun', 'leaves', 'menorah', 'crescent'];
-    public const CORNERS = ['none', 'holly', 'web', 'stars', 'sparkles', 'hearts', 'leaves', 'flake', 'lantern', 'diya', 'dreidel', 'crescent', 'shamrock', 'egg', 'sun', 'blossom'];
+    public const GARLANDS = ['none', 'lights', 'hearts', 'shamrocks', 'eggs', 'bunting-usa', 'bunting-halloween', 'leaves', 'snowflakes', 'lanterns', 'diyas', 'beads', 'fanous', 'tulips'];
+    public const ORNAMENTS = ['none', 'sparkles', 'bat', 'blossom', 'sun', 'leaves', 'menorah', 'crescent', 'sabzeh'];
+    public const CORNERS = ['none', 'holly', 'web', 'stars', 'sparkles', 'hearts', 'leaves', 'flake', 'lantern', 'diya', 'dreidel', 'crescent', 'shamrock', 'egg', 'sun', 'blossom', 'hyacinth'];
     public const HATS = ['none', 'santa', 'witch', 'tophat', 'party', 'beanie', 'leprechaun', 'bunny'];
     public const EFFECTS = ['none', 'snow', 'leaves', 'petals', 'hearts', 'embers', 'confetti', 'fireworks'];
 }

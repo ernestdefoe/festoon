@@ -5,9 +5,10 @@ namespace Ernestdefoe\Festoon\Calendar;
 /**
  * Where the sun and moon are, to about a minute of arc.
  *
- * Only Diwali needs this. It falls on the new moon (amavasya) that ends the
- * month of Ashvin, in the Hindu lunisolar calendar, and no calendar ICU ships
- * can say when that is. The formulas are the abridged series from Jean Meeus,
+ * Diwali falls on the new moon (amavasya) that ends the month of Ashvin, in
+ * the Hindu lunisolar calendar, and no calendar ICU ships can say when that
+ * is. Nowruz starts with the March equinox, which ICU's Persian calendar only
+ * approximates with a 33-year cycle. The formulas are the abridged series from Jean Meeus,
  * "Astronomical Algorithms", chapters 25 and 47 — good to a few minutes of
  * time for the moon, which is plenty to place a tithi on the right evening.
  */
@@ -91,6 +92,26 @@ final class Astronomy
             }
             $ts += $gap / 12.190749 * 86400;
             if (abs($gap) < 0.0001) {
+                break;
+            }
+        }
+
+        return (int) round($ts);
+    }
+
+    /**
+     * The March equinox of a year — the moment the sun's apparent longitude
+     * reaches 0° — to within a minute or two. Newton's method again, the sun
+     * moving about 0.9856° a day.
+     */
+    public static function marchEquinox(int $year): int
+    {
+        $ts = (float) gmmktime(12, 0, 0, 3, 20, $year);
+
+        for ($i = 0; $i < 6; $i++) {
+            $gap = self::wrap(180 - self::sun(self::centuries((int) round($ts)))) - 180;
+            $ts += $gap / 0.985647 * 86400;
+            if (abs($gap) < 0.00001) {
                 break;
             }
         }
