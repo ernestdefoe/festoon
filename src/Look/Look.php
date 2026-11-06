@@ -2,6 +2,8 @@
 
 namespace Ernestdefoe\Festoon\Look;
 
+use Ernestdefoe\Festoon\Style\Svg;
+
 /**
  * One look, its stored changes laid over its defaults and every value checked.
  *
@@ -15,7 +17,7 @@ final class Look
     public const CUSTOM_DEFAULTS = [
         'date' => ['type' => 'range', 'from' => '01-01', 'to' => '01-01'],
         'primary' => '#536f90', 'secondary' => '#536f90', 'garland' => 'none', 'ornament' => 'none',
-        'corner' => 'none', 'hat' => 'none', 'trim' => 'none', 'effect' => 'none', 'emoji' => '',
+        'corner' => 'none', 'hat' => 'none', 'trim' => 'none', 'effect' => 'none', 'emoji' => '', 'svg' => '',
     ];
 
     /** @param array<string, mixed> $data */
@@ -46,6 +48,12 @@ final class Look
             }
         }
 
+        // A fixed-date holiday can move to the day a country keeps it,
+        // like Christmas on December 24.
+        if (($d['date']['type'] ?? '') === 'date' && preg_match('/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', (string) ($changes['md'] ?? ''))) {
+            $d['date']['md'] = $changes['md'];
+        }
+
         foreach (['primary', 'secondary'] as $c) {
             $d[$c] = self::color($changes[$c] ?? null) ?? $d[$c];
         }
@@ -57,6 +65,10 @@ final class Look
 
         $d['trim'] = self::cleanTrim($changes['trim'] ?? $d['trim']);
         $d['emoji'] = self::cleanEmoji($changes['emoji'] ?? $d['emoji'] ?? '');
+        // Kept as typed; Style\Svg cleans it when the stylesheet is written.
+        $svg = $changes['svg'] ?? $d['svg'] ?? '';
+        $d['svg'] = is_string($svg) && strlen($svg) <= Svg::MAX ? $svg : '';
+        $d['size'] = self::int($changes['size'] ?? null, 36, 16, 64);
         $d['name'] = mb_substr(trim(strip_tags((string) ($changes['name'] ?? ''))), 0, 60);
 
         if ($d['effect'] === 'fireworks' && ! is_array($d['sky'])) {
@@ -112,6 +124,26 @@ final class Look
     public function get(string $slot): string
     {
         return (string) $this->data[$slot];
+    }
+
+    /** Pixel size of an emoji or picture of the administrator's own beside the forum's name. */
+    public function size(): int
+    {
+        return $this->data['size'];
+    }
+
+    /**
+     * Whether something is drawn beside the forum's name: a built-in piece,
+     * or an emoji or picture that was actually given.
+     */
+    public function hasHeaderPiece(): bool
+    {
+        return match ($this->get('ornament')) {
+            'none' => false,
+            'emoji' => $this->get('emoji') !== '',
+            'svg' => trim($this->get('svg')) !== '',
+            default => true,
+        };
     }
 
     /** @return 'none'|'snow'|list<string> */

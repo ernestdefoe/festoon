@@ -13,6 +13,7 @@ use Illuminate\Contracts\Filesystem\Cloud;
 use Illuminate\Contracts\Filesystem\Factory;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Puts today's look on the page, decided here on the server so the first paint
@@ -33,7 +34,7 @@ class InjectFestoon
 
     protected Filesystem $assets;
 
-    public function __construct(protected Config $config, protected Schedule $schedule, Factory $filesystems)
+    public function __construct(protected Config $config, protected Schedule $schedule, Factory $filesystems, protected TranslatorInterface $translator)
     {
         $this->assets = $filesystems->disk('flarum-assets');
     }
@@ -80,14 +81,25 @@ class InjectFestoon
             }
         }
 
-        if ($preview !== null || $look->get('effect') === 'fireworks') {
+        // The occasion's name, for the preview notice and for the tip on the
+        // piece beside the forum's name. Only the script puts it on the page,
+        // so the HTML crawlers read carries none of it.
+        $tip = ! $off && $parts['header'] && $look->hasHeaderPiece();
+
+        if ($preview !== null || $tip || $look->get('effect') === 'fireworks') {
             $document->payload['festoon'] = array_filter([
                 'look' => $look->id,
                 'preview' => $preview !== null,
-                'name' => $preview !== null ? $look->name() : null,
+                'name' => $this->name($look),
+                'tip' => $tip,
                 'sky' => $look->get('effect') === 'fireworks' && $parts['effects'] ? $look->sky() : null,
             ]);
         }
+    }
+
+    protected function name(Look $look): string
+    {
+        return $look->group() === 'custom' ? $look->name() : $this->translator->trans('ernestdefoe-festoon.lib.looks.'.$look->id);
     }
 
     /**

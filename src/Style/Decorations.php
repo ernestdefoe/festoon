@@ -27,6 +27,7 @@ final class Decorations
         $still = '';
         $on = self::ON;
         $emoji = self::content($look->get('emoji'));
+        $svg = in_array('svg', [$look->get('ornament'), $look->get('corner')], true) ? Svg::uri($look->get('svg'), $look->get('primary')) : null;
 
         // The image itself goes in one rule per selector list, so a drawing used
         // in three places is in the file once; a still twin only when it moves.
@@ -57,17 +58,45 @@ final class Decorations
             $row = $on.'.Header-title{display:flex;align-items:center}'
                 .'@media (max-width:767.98px){'.$on.'.Header-title{justify-content:center}}';
 
-            if ($look->get('ornament') === 'emoji') {
+            $kind = $look->get('ornament');
+            $size = $look->size();
+            $piece = $on.'.Header-title::after{content:"";flex:none;margin-inline-start:6px;pointer-events:none;';
+            $width = 0;
+
+            if ($kind === 'emoji') {
                 if ($emoji) {
-                    $css .= $row.$on.'.Header-title::after{content:'.$emoji.';flex:none;margin-inline-start:6px;font-size:26px;line-height:1;vertical-align:middle;pointer-events:none}';
+                    $width = (int) round($size * 1.1);
+                    $css .= $row.$on.'.Header-title::after{content:'.$emoji.';flex:none;margin-inline-start:6px;font-size:'.round($size * .72).'px;line-height:1;pointer-events:none}';
                 }
-            } elseif ($ornament = Art::ornament($look->get('ornament'))) {
-                $css .= $row.$on.'.Header-title::after{content:"";flex:none;width:48px;height:36px;margin-inline-start:6px;vertical-align:middle;pointer-events:none}';
+            } elseif ($kind === 'svg') {
+                if ($svg) {
+                    $width = $size;
+                    $css .= $row.$piece."width:{$size}px;height:{$size}px;background:url(\"$svg\") center/contain no-repeat}";
+                }
+            } elseif ($ornament = Art::ornament($kind)) {
+                $width = 48;
+                $css .= $row.$piece.'width:48px;height:36px}';
                 $bg($on.'.Header-title::after', $ornament, 48, 36, 'center/contain no-repeat');
+            }
+
+            if ($width) {
+                // The occasion's name on hover, or on a tap on a phone: the
+                // forum script lays an empty button over the piece.
+                // It follows the piece in the title's flex row and its negative
+                // margin lays it over the piece, wherever the row puts it.
+                $css .= $on.'.Header-title::after{order:1}'
+                    .$on.'.Festoon-tip{order:2;position:relative;flex:none;align-self:stretch;width:'.($width + 6).'px;margin-inline-start:-'.($width + 6).'px;padding:0;border:0;background:none;cursor:help}'
+                    .$on.'.Festoon-tip:is(:hover,:focus-visible,:focus)::after{content:attr(aria-label);position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:5;width:max-content;max-width:min(260px,80vw);padding:4px 8px;border-radius:4px;background:var(--text-color);color:var(--body-bg);font-size:12px;font-weight:600;line-height:1.4;text-align:start;white-space:normal;pointer-events:none}'
+                    .$on.'.Festoon-tip:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px;border-radius:4px}'
+                    .'.Festoon-off .Festoon-tip{display:none}';
             }
         }
 
-        $corner = $look->get('corner') === 'emoji' ? $emoji : Art::corner($look->get('corner'));
+        $corner = match ($look->get('corner')) {
+            'emoji' => $emoji,
+            'svg' => $svg,
+            default => Art::corner($look->get('corner')),
+        };
 
         if (($parts['ornaments'] ?? true) && $corner) {
             // The welcome banner, in both bottom corners, the right one mirrored.
@@ -92,6 +121,10 @@ final class Decorations
                     .$on.'.WelcomeHero::after{transform:none}'
                     .$widget.'{content:'.$emoji.';font-size:22px;line-height:34px;text-align:center}'
                     .$divider.'{content:'.$emoji.';font-size:13px;line-height:18px;text-align:center;background:linear-gradient(90deg,var(--control-bg) calc(50% - 16px),transparent 0 calc(50% + 16px),var(--control-bg) 0) 0 50%/100% 1px no-repeat}';
+            } elseif ($look->get('corner') === 'svg') {
+                $css .= $on.'.WelcomeHero::before,'.$on.'.WelcomeHero::after,'.$widget.'{background:url("'.$svg.'") center/contain no-repeat}'
+                    .$on.'.WelcomeHero::after{transform:none}'
+                    .$divider.'{background:url("'.$svg.'") center/18px 18px no-repeat,linear-gradient(90deg,var(--control-bg) calc(50% - 14px),transparent 0 calc(50% + 14px),var(--control-bg) 0) 0 50%/100% 1px no-repeat}';
             } else {
                 $bg($on.'.WelcomeHero::before,'.$on.'.WelcomeHero::after,'.$widget, $corner, 34, 34, 'center/contain no-repeat');
                 // The divider keeps core's line, drawn under the ornament.

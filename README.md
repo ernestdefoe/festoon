@@ -30,8 +30,16 @@ Day, World Photography Day, Programmers' Day (the 256th day of the year),
 Software Freedom Day, World Teachers' Day and World Science Day.
 
 **Your own holidays**: add a founders' day, a forum birthday or a local
-festival with its own dates, colors and decorations, including an emoji or
-symbol of your choice beside the forum's name and as the ornament.
+festival with its own dates, colors and decorations, including an emoji, a
+symbol or an SVG picture of your own beside the forum's name and as the
+ornament. An SVG is cleaned on the server and drawn as an image, so nothing in
+it can run, and any part drawn in `currentColor` takes the look's main color.
+
+Hover over the picture beside the forum's name, or tap it on a phone, and it
+names the occasion.
+
+Fixed-date holidays can move to the day your country keeps them, like
+Christmas on December 24.
 
 ### Dates that are worked out, not typed in
 

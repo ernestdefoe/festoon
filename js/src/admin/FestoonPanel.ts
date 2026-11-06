@@ -67,7 +67,12 @@ export default class FestoonPanel extends Component<Attrs> {
     const base = this.data.looks.find((l) => l.id === id)!;
     if (base?.group === 'custom') return { ...base, ...this.customRow(id) };
     const o = this.overrides[id] || {};
-    const date = base.date?.type === 'range' ? { ...base.date, ...(o.from ? { from: o.from } : {}), ...(o.to ? { to: o.to } : {}) } : base.date;
+    const date =
+      base.date?.type === 'range'
+        ? { ...base.date, ...(o.from ? { from: o.from } : {}), ...(o.to ? { to: o.to } : {}) }
+        : base.date?.type === 'date' && o.md
+          ? { ...base.date, md: o.md }
+          : base.date;
     return { ...base, ...o, date };
   }
 
@@ -144,8 +149,44 @@ export default class FestoonPanel extends Component<Attrs> {
     ]);
   }
 
+  /**
+   * When the look next runs, as it stands in the form. A month-and-day rule is
+   * worked out here; a calculated date (Easter, Diwali and the rest) keeps the
+   * server's answer, moved by however much Days before or after changed.
+   */
+  next(look: Look): [string, string] | null {
+    const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const shift = (s: string, days: number) => {
+      const d = new Date(s + 'T12:00:00');
+      d.setDate(d.getDate() + days);
+      return d;
+    };
+    const today = ymd(new Date());
+    // The same 0 to 60 the server holds them to.
+    const clamp = (v: any) => Math.max(0, Math.min(60, Number(v) || 0));
+    const before = clamp(look.before);
+    const after = clamp(look.after);
+    const type = look.date?.type;
+
+    if (type === 'range' || type === 'date') {
+      const [from, to] = type === 'range' ? [look.date.from, look.date.to] : [look.date.md, look.date.md];
+      const year = new Date().getFullYear();
+      for (const y of [year - 1, year, year + 1]) {
+        const start = shift(`${y}-${from}`, type === 'range' ? 0 : -before);
+        const end = shift(`${y}-${to}`, type === 'range' ? 0 : after);
+        if (end < start) end.setFullYear(end.getFullYear() + 1); // December 21 to March 19
+        if (ymd(end) >= today) return [ymd(start), ymd(end)];
+      }
+      return null;
+    }
+
+    const saved = this.data.next[look.id];
+    const base = this.data.looks.find((l) => l.id === look.id)!;
+    return saved ? [ymd(shift(saved[0], clamp(base.before) - before)), ymd(shift(saved[1], after - clamp(base.after)))] : null;
+  }
+
   row(look: Look) {
-    const next = this.data.next[look.id];
+    const next = this.next(look);
     const open = this.open === look.id;
 
     return m('li.Festoon-look', { key: look.id, className: look.enabled ? '' : 'is-off' }, [
@@ -197,10 +238,11 @@ export default class FestoonPanel extends Component<Attrs> {
             ),
           ])
         : m('.Festoon-row', [
+            look.date?.type === 'date' && this.field(t('edit.day_label'), this.monthDay(look.date.md, (v) => this.change(id, 'md', v))),
             this.field(t('edit.before_label'), m('input.FormControl[type=number][min=0][max=60]', { value: look.before, oninput: num('before') })),
             this.field(t('edit.after_label'), m('input.FormControl[type=number][min=0][max=60]', { value: look.after, oninput: num('after') })),
           ]),
-      m('p.helpText', isRange ? t('edit.dates_help') : t('edit.window_help')),
+      m('p.helpText', isRange ? t('edit.dates_help') : look.date?.type === 'date' ? t('edit.day_help') : t('edit.window_help')),
 
       m('.Festoon-row', [
         this.field(t('edit.primary_label'), m('input.FormControl[type=color]', { value: look.primary, oninput: set('primary') })),
@@ -226,6 +268,17 @@ export default class FestoonPanel extends Component<Attrs> {
       (look.ornament === 'emoji' || look.corner === 'emoji') && [
         this.field(t('edit.emoji_label'), m('input.FormControl.Festoon-emoji', { value: look.emoji || '', maxlength: 32, oninput: set('emoji') })),
         m('p.helpText', t('edit.emoji_help')),
+      ],
+      (look.ornament === 'svg' || look.corner === 'svg') && [
+        this.field(
+          t('edit.svg_label'),
+          m('textarea.FormControl.Festoon-svg', { value: look.svg || '', rows: 5, maxlength: 20000, spellcheck: false, oninput: set('svg') })
+        ),
+        m('p.helpText', t('edit.svg_help')),
+      ],
+      (look.ornament === 'emoji' || look.ornament === 'svg') && [
+        this.field(t('edit.size_label'), m('input.FormControl.Festoon-size[type=number][min=16][max=64]', { value: look.size ?? 36, oninput: num('size') })),
+        m('p.helpText', t('edit.size_help')),
       ],
 
       m('.Festoon-row', [
@@ -295,7 +348,7 @@ export default class FestoonPanel extends Component<Attrs> {
 
   add() {
     const id = Math.random().toString(36).slice(2, 10);
-    this.custom.push({ id, name: '', enabled: true, from: '01-01', to: '01-01', primary: '#536f90', secondary: '#536f90', trim: 'none', emoji: '' });
+    this.custom.push({ id, name: '', enabled: true, from: '01-01', to: '01-01', primary: '#536f90', secondary: '#536f90', trim: 'none', emoji: '', svg: '' });
     this.attrs.custom(JSON.stringify(this.custom));
     // The server lists a look once it is saved; until then show it from here.
     this.data.looks.push({
@@ -314,6 +367,8 @@ export default class FestoonPanel extends Component<Attrs> {
       effect: 'none',
       trim: 'none',
       emoji: '',
+      svg: '',
+      size: 36,
       date: { type: 'range', from: '01-01', to: '01-01' },
     });
     this.open = 'custom-' + id;

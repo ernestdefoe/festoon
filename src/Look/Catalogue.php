@@ -169,10 +169,11 @@ final class Catalogue
     private const DAY_ICONS = ['pi', 'palette', 'camera', 'chess', 'code', 'unlock', 'apple', 'atom', 'cap'];
 
     // What each decoration slot may hold — anything else stored is treated as "none".
-    // "emoji" is the look's own emoji or symbol, typed in by the administrator.
+    // "emoji" is the look's own emoji or symbol, typed in by the administrator,
+    // and "svg" a picture of their own (see Style\Svg).
     public const GARLANDS = ['none', 'lights', 'hearts', 'shamrocks', 'eggs', 'bunting-usa', 'bunting-halloween', 'leaves', 'snowflakes', 'lanterns', 'diyas', 'beads', 'fanous', 'tulips'];
-    public const ORNAMENTS = ['none', 'sparkles', 'bat', 'blossom', 'sun', 'leaves', 'menorah', 'crescent', 'sabzeh', ...self::DAY_ICONS, 'emoji'];
-    public const CORNERS = ['none', 'holly', 'web', 'stars', 'sparkles', 'hearts', 'leaves', 'flake', 'lantern', 'diya', 'dreidel', 'crescent', 'shamrock', 'egg', 'sun', 'blossom', 'hyacinth', ...self::DAY_ICONS, 'emoji'];
+    public const ORNAMENTS = ['none', 'sparkles', 'bat', 'blossom', 'sun', 'leaves', 'menorah', 'crescent', 'sabzeh', ...self::DAY_ICONS, 'emoji', 'svg'];
+    public const CORNERS = ['none', 'holly', 'web', 'stars', 'sparkles', 'hearts', 'leaves', 'flake', 'lantern', 'diya', 'dreidel', 'crescent', 'shamrock', 'egg', 'sun', 'blossom', 'hyacinth', ...self::DAY_ICONS, 'emoji', 'svg'];
     public const HATS = ['none', 'santa', 'witch', 'tophat', 'party', 'beanie', 'leprechaun', 'bunny'];
     public const EFFECTS = ['none', 'snow', 'leaves', 'petals', 'hearts', 'embers', 'confetti', 'fireworks'];
 }

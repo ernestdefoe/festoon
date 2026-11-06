@@ -3,7 +3,6 @@ import { extend } from 'flarum/common/extend';
 import WelcomeHero from 'flarum/forum/components/WelcomeHero';
 import FieldSet from 'flarum/common/components/FieldSet';
 import Switch from 'flarum/common/components/Switch';
-import extractText from 'flarum/common/utils/extractText';
 
 declare const m: import('mithril').Static;
 
@@ -11,6 +10,7 @@ interface Payload {
   look?: string;
   preview?: boolean;
   name?: string;
+  tip?: boolean;
   sky?: string[];
 }
 
@@ -52,10 +52,21 @@ app.initializers.add('ernestdefoe-festoon', () => {
     );
   });
 
+  const name = data?.name || data?.look || '';
+
   if (data?.preview) {
-    const key = `ernestdefoe-festoon.lib.looks.${data.look}`;
-    const name = data.name || (app.translator.translations[key] ? extractText(app.translator.trans(key)) : data.look);
     setTimeout(() => app.alerts.show({ type: 'warning' }, app.translator.trans('ernestdefoe-festoon.forum.preview', { name })));
+  }
+
+  // The piece beside the forum's name is drawn by CSS; this empty button over
+  // it names the occasion on hover, keyboard focus or a tap.
+  const title = document.querySelector('.App-header .Header-title');
+  if (data?.tip && name && title && !title.querySelector('.Festoon-tip')) {
+    const tip = document.createElement('button');
+    tip.type = 'button';
+    tip.className = 'Festoon-tip';
+    tip.setAttribute('aria-label', name);
+    title.appendChild(tip);
   }
 
   // Fireworks: the server adds their script only on a day that has them, so
