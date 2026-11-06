@@ -238,7 +238,11 @@ export default class FestoonPanel extends Component<Attrs> {
             ),
           ])
         : m('.Festoon-row', [
-            look.date?.type === 'date' && this.field(t('edit.day_label'), this.monthDay(look.date.md, (v) => this.change(id, 'md', v))),
+            look.date?.type === 'date' &&
+              this.field(
+                t('edit.day_label'),
+                this.monthDay(look.date.md, (v) => this.change(id, 'md', v))
+              ),
             this.field(t('edit.before_label'), m('input.FormControl[type=number][min=0][max=60]', { value: look.before, oninput: num('before') })),
             this.field(t('edit.after_label'), m('input.FormControl[type=number][min=0][max=60]', { value: look.after, oninput: num('after') })),
           ]),
@@ -277,7 +281,10 @@ export default class FestoonPanel extends Component<Attrs> {
         m('p.helpText', t('edit.svg_help')),
       ],
       (look.ornament === 'emoji' || look.ornament === 'svg') && [
-        this.field(t('edit.size_label'), m('input.FormControl.Festoon-size[type=number][min=16][max=64]', { value: look.size ?? 36, oninput: num('size') })),
+        this.field(
+          t('edit.size_label'),
+          m('input.FormControl.Festoon-size[type=number][min=16][max=64]', { value: look.size ?? 36, oninput: num('size') })
+        ),
         m('p.helpText', t('edit.size_help')),
       ],
 
@@ -348,7 +355,18 @@ export default class FestoonPanel extends Component<Attrs> {
 
   add() {
     const id = Math.random().toString(36).slice(2, 10);
-    this.custom.push({ id, name: '', enabled: true, from: '01-01', to: '01-01', primary: '#536f90', secondary: '#536f90', trim: 'none', emoji: '', svg: '' });
+    this.custom.push({
+      id,
+      name: '',
+      enabled: true,
+      from: '01-01',
+      to: '01-01',
+      primary: '#536f90',
+      secondary: '#536f90',
+      trim: 'none',
+      emoji: '',
+      svg: '',
+    });
     this.attrs.custom(JSON.stringify(this.custom));
     // The server lists a look once it is saved; until then show it from here.
     this.data.looks.push({
