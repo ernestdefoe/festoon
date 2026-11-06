@@ -33,6 +33,17 @@ class DecorationsTest extends TestCase
         }
     }
 
+    public function test_the_ornament_stays_beside_an_image_logo(): void
+    {
+        // Core draws an uploaded logo as a block; without a flex row the
+        // ornament wrapped onto a line of its own under it.
+        $config = new Config(new ArraySettings([]));
+        $css = Decorations::css($config->look('education'), $config->parts());
+
+        $this->assertStringContainsString(':not(.Festoon-off) .Header-title{display:flex;align-items:center}', $css);
+        $this->assertStringNotContainsString('Header-title{display:flex', Decorations::css($config->look('christmas'), $config->parts()));
+    }
+
     public function test_switched_off_parts_are_left_out(): void
     {
         $config = new Config(new ArraySettings([]));

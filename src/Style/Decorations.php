@@ -51,12 +51,18 @@ final class Decorations
                 $bg($on.'.App-header::after,'.$on.'.App-navigation::after', $garland, 960, Art::GARLAND_HEIGHT, '0 0/960px '.Art::GARLAND_HEIGHT.'px repeat-x');
             }
 
+            // Core draws an image logo as a block, so a plain inline ornament
+            // would wrap under it. A flex row keeps it beside the logo or the
+            // name, centred like the title already is in the phone drawer.
+            $row = $on.'.Header-title{display:flex;align-items:center}'
+                .'@media (max-width:767.98px){'.$on.'.Header-title{justify-content:center}}';
+
             if ($look->get('ornament') === 'emoji') {
                 if ($emoji) {
-                    $css .= $on.'.Header-title::after{content:'.$emoji.';display:inline-block;margin-inline-start:6px;font-size:26px;line-height:1;vertical-align:middle;pointer-events:none}';
+                    $css .= $row.$on.'.Header-title::after{content:'.$emoji.';flex:none;margin-inline-start:6px;font-size:26px;line-height:1;vertical-align:middle;pointer-events:none}';
                 }
             } elseif ($ornament = Art::ornament($look->get('ornament'))) {
-                $css .= $on.'.Header-title::after{content:"";display:inline-block;width:48px;height:36px;margin-inline-start:6px;vertical-align:middle;pointer-events:none}';
+                $css .= $row.$on.'.Header-title::after{content:"";flex:none;width:48px;height:36px;margin-inline-start:6px;vertical-align:middle;pointer-events:none}';
                 $bg($on.'.Header-title::after', $ornament, 48, 36, 'center/contain no-repeat');
             }
         }
