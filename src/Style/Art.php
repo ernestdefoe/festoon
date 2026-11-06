@@ -115,7 +115,7 @@ final class Art
             'menorah' => "<g transform='translate(2 8)' fill='#1565c0'>".implode('', array_map(fn ($i) => "<rect x='".($i * 5)."' y='".($i === 4 ? 0 : 4)."' width='2' height='".($i === 4 ? 20 : 16)."'/><path class='fk' ".self::d($i, .13, .9)." d='M".($i * 5 + 1).' '.($i === 4 ? -5 : -1)." q2 2 0 4 q-2 -2 0 -4z' fill='#f2b705'/>", range(0, 8)))."<rect x='-1' y='20' width='44' height='2.5'/><rect x='19' y='20' width='4' height='7'/><rect x='13' y='26' width='16' height='2.5'/></g>",
             'crescent' => "<g transform='translate(18 18)'>".self::crescent().'</g>',
             'sabzeh' => "<g transform='translate(24 0)'>".self::sabzeh().'</g>',
-            default => null,
+            default => ($icon = self::icon($kind)) ? "<g transform='translate(7 1)'>$icon</g>" : null,
         };
     }
 
@@ -139,6 +139,30 @@ final class Art
             'sun' => "<g transform='translate(17 17)'><circle r='7' fill='#ffb300'/><g class='rt' style='animation-duration:24s'>".implode('', array_map(fn ($i) => sprintf("<line x1='%.1f' y1='%.1f' x2='%.1f' y2='%.1f' stroke='#ffb300' stroke-width='2' stroke-linecap='round'/>", cos($i * M_PI / 4) * 10, sin($i * M_PI / 4) * 10, cos($i * M_PI / 4) * 14, sin($i * M_PI / 4) * 14), range(0, 7))).'</g></g>',
             'blossom' => "<path d='M2 30 Q16 20 32 22' stroke='#6d4c41' stroke-width='2' fill='none'/><g transform='translate(12 21)'><g class='bt' style='animation-duration:3s'>".self::blossom()."</g></g><g transform='translate(25 18)'>".self::blossom().'</g>',
             'hyacinth' => "<g transform='translate(10 2)'><g class='gr'><path d='M2 22 V8' stroke='#558b2f' stroke-width='1.6'/>".self::hyacinth('#7e57c2')."</g><path d='M-4 22 h12 l-2 9 h-8 z' fill='#00838f'/></g><g transform='translate(25 24)'><g class='bb' style='transform-origin:50% 100%'><ellipse rx='5.5' ry='7' fill='#ffcdd2' stroke='#e53935' stroke-width='.7'/><path d='M-5 -1 q2.5 -3 5 0 t5 0' stroke='#00838f' stroke-width='1.4' fill='none'/></g></g>",
+            default => self::icon($kind),
+        };
+    }
+
+    /**
+     * The international days' pieces: one 34 × 34 drawing each, used both
+     * beside the forum's name and as the ornament. Each has a light outline
+     * so it still reads on a dark header or a dark-mode page.
+     */
+    private static function icon(string $kind): ?string
+    {
+        return match ($kind) {
+            'pi' => "<circle cx='17' cy='17' r='15' fill='#fff3e0' stroke='#ef6c00' stroke-width='1.5'/><g class='bb' style='transform-origin:50% 50%' stroke='#4a148c' stroke-width='3' fill='none' stroke-linecap='round'><path d='M8 12 Q9.5 9.5 12.5 10 H26'/><path d='M14 10 V24'/><path d='M21.5 10 Q21 21 25.5 24'/></g>",
+            'palette' => "<path d='M17 3 C26 3 32 9 32 16 C32 21 28 22 25 21 C22 20 20 22 21 25 C22 29 19 31 16 31 C8 31 2 25 2 17 C2 9 9 3 17 3 Z' fill='#f5deb3' stroke='#8d6e63' stroke-width='1.2'/><circle cx='11' cy='23' r='2.6' fill='#d7b98e'/>"
+                .implode('', array_map(fn ($p, $i) => "<circle class='bt' ".self::d($i, .35, 1.4)." cx='$p[0]' cy='$p[1]' r='3' fill='$p[2]'/>", [[8, 15, '#e53935'], [12, 9, '#fdd835'], [19, 8, '#1e88e5'], [25, 12, '#43a047']], range(0, 3))),
+            'camera' => "<rect x='9' y='6' width='9' height='5' rx='1.5' fill='#37474f' stroke='#cfd8dc'/><rect x='3' y='10' width='28' height='18' rx='3' fill='#37474f' stroke='#cfd8dc'/><circle cx='17' cy='19' r='6.5' fill='#90caf9' stroke='#eceff1' stroke-width='2'/><circle cx='17' cy='19' r='2.5' fill='#1565c0'/><rect class='tw' x='24' y='13' width='4' height='3' rx='.8' fill='#ffeb3b'/>",
+            'chess' => "<g class='bb' style='transform-origin:50% 100%'><path d='M9 30 H26 V27 H24 C24 21 26.5 17 25 12 C23.5 7 20 4.5 15.5 5 L13.5 2.5 L12 6 C9 8 7 11.5 7 15 L9.5 17.5 L13.5 15.5 C14.5 17.5 12.5 20 11.5 22 C10.5 24 10.5 26 11.5 27 H9 Z' fill='#4e342e' stroke='#d7ccc8' stroke-width='1.2' stroke-linejoin='round'/><circle cx='15' cy='10' r='1.3' fill='#d7ccc8'/></g>",
+            'code' => "<rect x='2' y='5' width='30' height='24' rx='4' fill='#263238' stroke='#90a4ae'/><path d='M11 11 L6 17 L11 23 M19 9.5 L15 24.5 M23 11 L28 17 L23 23' stroke='#69f0ae' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/>",
+            'unlock' => "<path d='M11 15 V10 C11 3.5 21 3.5 21 10 V11' stroke='#90a4ae' stroke-width='3' fill='none' stroke-linecap='round'/><g class='bb' style='transform-origin:50% 0'><rect x='7' y='15' width='20' height='16' rx='2.5' fill='#f9a825' stroke='#795548'/><circle cx='17' cy='21.5' r='2.3' fill='#5d4037'/><path d='M17 22 V26.5' stroke='#5d4037' stroke-width='2' stroke-linecap='round'/></g>",
+            'apple' => "<rect x='4' y='24' width='26' height='6' rx='1' fill='#1565c0' stroke='#e3f2fd' stroke-width='.8'/><rect x='6' y='18.5' width='23' height='5.5' rx='1' fill='#2e7d32' stroke='#e8f5e9' stroke-width='.8'/><g class='bb' style='transform-origin:50% 100%'><path d='M17 8.5 C13 5.5 8 8 9 12.5 C10 16.5 14 18 17 17 C20 18 24 16.5 25 12.5 C26 8 21 5.5 17 8.5 Z' fill='#e53935' stroke='#ffcdd2' stroke-width='.8'/><path d='M17 8.5 L18 3.5' stroke='#5d4037' stroke-width='1.6' stroke-linecap='round'/><ellipse cx='21' cy='4.5' rx='3' ry='1.5' transform='rotate(-25 21 4.5)' fill='#43a047'/></g>",
+            'atom' => "<g transform='translate(17 17)'><g class='rt' style='animation-duration:18s' fill='none' stroke='#1e88e5' stroke-width='1.6'>"
+                .implode('', array_map(fn ($a) => "<g transform='rotate($a)'><ellipse rx='14' ry='5'/><circle cx='14' r='1.8' fill='#90caf9' stroke='none'/></g>", [0, 60, 120]))
+                ."</g><circle r='3.4' fill='#e53935' stroke='#ffcdd2'/></g>",
+            'cap' => "<path d='M9 15 V22 C9 26 25 26 25 22 V15 L17 18.5 Z' fill='#37474f' stroke='#b0bec5'/><path d='M17 6 L32 12 L17 18 L2 12 Z' fill='#263238' stroke='#b0bec5' stroke-linejoin='round'/><g class='sw' style='transform-origin:0 0'><path d='M17 12 L27 14 V22' stroke='#ffb300' stroke-width='1.4' fill='none'/><rect x='25.5' y='21' width='3' height='5' rx='1' fill='#ffb300'/></g>",
             default => null,
         };
     }

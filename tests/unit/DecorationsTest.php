@@ -43,6 +43,31 @@ class DecorationsTest extends TestCase
         $this->assertStringNotContainsString('Festoon-fall', $css);
     }
 
+    public function test_an_emoji_cannot_break_out_of_the_stylesheet(): void
+    {
+        $config = new Config(new ArraySettings([
+            Config::CUSTOM => json_encode([['id' => 'x', 'name' => 'Camera day', 'ornament' => 'emoji', 'corner' => 'emoji', 'emoji' => "📷\"}</style><b>\n".str_repeat('x', 20)]]),
+        ]));
+        $look = $config->look('custom-x');
+        $css = Decorations::css($look, $config->parts());
+
+        $this->assertSame('📷"}</style><b>xx', $look->get('emoji'));
+        $this->assertStringContainsString('.Header-title::after{content:"\\1f4f7 \\22 \\7d \\3c ', $css);
+        $this->assertStringNotContainsString('</style>', $css);
+        $this->assertSame(1, substr_count($css, 'WelcomeHero::after{transform:none}'));
+    }
+
+    public function test_an_empty_emoji_draws_nothing(): void
+    {
+        $config = new Config(new ArraySettings([
+            Config::CUSTOM => json_encode([['id' => 'x', 'name' => 'Day', 'ornament' => 'emoji', 'corner' => 'emoji', 'emoji' => " \t"]]),
+        ]));
+        $css = Decorations::css($config->look('custom-x'), $config->parts());
+
+        $this->assertStringNotContainsString('Header-title', $css);
+        $this->assertStringNotContainsString('WelcomeHero', $css);
+    }
+
     public function test_falling_layer_only_for_falling_effects(): void
     {
         $this->assertStringContainsString('Festoon-fall--snow', InjectFestoon::falling('snow'));

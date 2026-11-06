@@ -14,6 +14,7 @@ use IntlCalendar;
  *   ['type' => 'date', 'md' => '12-25']                      every year on that day
  *   ['type' => 'easter']                                     Western Easter Sunday
  *   ['type' => 'weekday', 'month' => 11, 'weekday' => 4, 'nth' => 4]   4th Thursday of November (nth -1 = last)
+ *   ['type' => 'yearday', 'day' => 256]                      the 256th day of the year
  *   ['type' => 'chinese', 'month' => 1, 'day' => 1]         a day in the Chinese calendar
  *   ['type' => 'hebrew', 'month' => 3, 'day' => 25]         Hebrew calendar, months counted from Tishrei = 1
  *   ['type' => 'islamic', 'month' => 9, 'day' => 1]         Islamic calendar (Umm al-Qura), Muharram = 1
@@ -27,7 +28,7 @@ use IntlCalendar;
 class Dates
 {
     /** Rules cheap enough to work out on every request; the rest walk a year or the moon. */
-    protected const CHEAP = ['date', 'easter', 'weekday', 'nowruz'];
+    protected const CHEAP = ['date', 'easter', 'weekday', 'yearday', 'nowruz'];
 
     /** @var array<string, ?string> "type|params|year" => "Y-m-d" */
     protected array $memo = [];
@@ -83,6 +84,7 @@ class Dates
             'date' => self::monthDay((string) ($rule['md'] ?? ''), $year),
             'easter' => self::easter($year),
             'weekday' => self::nthWeekday($year, $int('month', 1), $int('weekday', 1), $int('nth', 1)),
+            'yearday' => $int('day') >= 1 && $int('day') <= 365 ? gmdate('Y-m-d', gmmktime(0, 0, 0, 1, $int('day'), $year)) : null,
             'chinese' => $this->chinese($year, $int('month', 1), $int('day', 1)),
             'hebrew' => $this->icu('hebrew', $year, $int('month', 1) - 1, $int('day', 1)),
             'islamic' => $this->icu('islamic-umalqura', $year, $int('month', 1) - 1, $int('day', 1)),

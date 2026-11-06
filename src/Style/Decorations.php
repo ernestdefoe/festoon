@@ -26,6 +26,7 @@ final class Decorations
         $css = '';
         $still = '';
         $on = self::ON;
+        $emoji = self::content($look->get('emoji'));
 
         // The image itself goes in one rule per selector list, so a drawing used
         // in three places is in the file once; a still twin only when it moves.
@@ -50,13 +51,19 @@ final class Decorations
                 $bg($on.'.App-header::after,'.$on.'.App-navigation::after', $garland, 960, Art::GARLAND_HEIGHT, '0 0/960px '.Art::GARLAND_HEIGHT.'px repeat-x');
             }
 
-            if ($ornament = Art::ornament($look->get('ornament'))) {
+            if ($look->get('ornament') === 'emoji') {
+                if ($emoji) {
+                    $css .= $on.'.Header-title::after{content:'.$emoji.';display:inline-block;margin-inline-start:6px;font-size:26px;line-height:1;vertical-align:middle;pointer-events:none}';
+                }
+            } elseif ($ornament = Art::ornament($look->get('ornament'))) {
                 $css .= $on.'.Header-title::after{content:"";display:inline-block;width:48px;height:36px;margin-inline-start:6px;vertical-align:middle;pointer-events:none}';
                 $bg($on.'.Header-title::after', $ornament, 48, 36, 'center/contain no-repeat');
             }
         }
 
-        if (($parts['ornaments'] ?? true) && ($corner = Art::corner($look->get('corner')))) {
+        $corner = $look->get('corner') === 'emoji' ? $emoji : Art::corner($look->get('corner'));
+
+        if (($parts['ornaments'] ?? true) && $corner) {
             // The welcome banner, in both bottom corners, the right one mirrored.
             $css .= $on.'.WelcomeHero{position:relative}'
                 .$on.'.WelcomeHero::before,'.$on.'.WelcomeHero::after{content:"";position:absolute;bottom:10px;width:64px;height:64px;pointer-events:none}'
@@ -72,9 +79,18 @@ final class Decorations
             // A small one in the middle of each divider between posts.
             $divider = $on.'.PostStream-item:has(+.PostStream-item)::after';
             $css .= $divider.'{height:18px;margin-top:-9px;margin-bottom:-9px;background-color:transparent;position:relative;z-index:1}';
-            $bg($on.'.WelcomeHero::before,'.$on.'.WelcomeHero::after,'.$widget, $corner, 34, 34, 'center/contain no-repeat');
-            // The divider keeps core's line, drawn under the ornament.
-            $bg($divider, $corner, 34, 34, 'center/18px 18px no-repeat', 'linear-gradient(var(--control-bg),var(--control-bg)) 0 50%/100% 1px no-repeat');
+            if ($look->get('corner') === 'emoji') {
+                // Text, not a drawing: centred in the same boxes, never mirrored,
+                // and the divider's line stops either side of it.
+                $css .= $on.'.WelcomeHero::before,'.$on.'.WelcomeHero::after{content:'.$emoji.';font-size:40px;line-height:64px;text-align:center}'
+                    .$on.'.WelcomeHero::after{transform:none}'
+                    .$widget.'{content:'.$emoji.';font-size:22px;line-height:34px;text-align:center}'
+                    .$divider.'{content:'.$emoji.';font-size:13px;line-height:18px;text-align:center;background:linear-gradient(90deg,var(--control-bg) calc(50% - 16px),transparent 0 calc(50% + 16px),var(--control-bg) 0) 0 50%/100% 1px no-repeat}';
+            } else {
+                $bg($on.'.WelcomeHero::before,'.$on.'.WelcomeHero::after,'.$widget, $corner, 34, 34, 'center/contain no-repeat');
+                // The divider keeps core's line, drawn under the ornament.
+                $bg($divider, $corner, 34, 34, 'center/18px 18px no-repeat', 'linear-gradient(var(--control-bg),var(--control-bg)) 0 50%/100% 1px no-repeat');
+            }
         }
 
         if ($parts['trims'] ?? true) {
@@ -126,6 +142,17 @@ final class Decorations
         }
 
         return $still === '' ? $css : $css.'@media (prefers-reduced-motion:reduce){'.$still.'}';
+    }
+
+    /**
+     * The administrator's emoji as a CSS string, every code point escaped, so
+     * no character of it can close the string or the rule. Null when empty.
+     */
+    public static function content(string $text): ?string
+    {
+        $cps = $text === '' ? [] : array_map('mb_ord', mb_str_split($text));
+
+        return $cps ? '"'.implode('', array_map(fn ($cp) => '\\'.dechex($cp).' ', $cps)).'"' : null;
     }
 
     /** Falling things: a few dozen fixed spans, moved by transform only. */

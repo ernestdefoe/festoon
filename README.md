@@ -22,10 +22,16 @@ Easter, Fourth of July, Halloween, Thanksgiving and Christmas.
 **Seasons** fill the time in between: spring, summer, fall and winter.
 
 **Around the world**, off until you turn them on: Lunar New Year, Diwali,
-Hanukkah, and Ramadan through Eid al-Fitr.
+Hanukkah, Ramadan through Eid al-Fitr, and Nowruz.
+
+**International days**, also off until you turn them on, one day each:
+International Day of Education, Pi Day, World Art Day, International Chess
+Day, World Photography Day, Programmers' Day (the 256th day of the year),
+Software Freedom Day, World Teachers' Day and World Science Day.
 
 **Your own holidays**: add a founders' day, a forum birthday or a local
-festival with its own dates, colors and decorations.
+festival with its own dates, colors and decorations, including an emoji or
+symbol of your choice beside the forum's name and as the ornament.
 
 ### Dates that are worked out, not typed in
 
@@ -81,6 +87,11 @@ crackles. The sparks fall under gravity and flicker as they die.
 ![Ramadan and Eid al-Fitr](https://raw.githubusercontent.com/ernestdefoe/festoon/main/images/ramadan.png)
 
 Hats are left off the religious holidays on purpose.
+
+### International days
+
+![Pi Day](https://raw.githubusercontent.com/ernestdefoe/festoon/main/images/piday.png)
+![World Photography Day in dark mode](https://raw.githubusercontent.com/ernestdefoe/festoon/main/images/photography-dark.png)
 
 ### On a phone
 

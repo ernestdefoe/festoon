@@ -26,7 +26,7 @@ interface Data {
 }
 
 const PARTS = ['colors', 'header', 'effects', 'hats', 'ornaments', 'trims'];
-const GROUPS = ['holidays', 'seasons', 'world', 'custom'];
+const GROUPS = ['holidays', 'seasons', 'world', 'days', 'custom'];
 const SLOTS = ['garland', 'ornament', 'corner', 'hat', 'effect'] as const;
 
 const t = (key: string, params: Record<string, any> = {}) => app.translator.trans(`ernestdefoe-festoon.admin.${key}`, params);
@@ -133,7 +133,7 @@ export default class FestoonPanel extends Component<Attrs> {
         const looks = allLooks.filter((l) => l.group === group);
         return m('section.Festoon-group', [
           m('h3', t(`groups.${group}`)),
-          ['seasons', 'world', 'custom'].includes(group) && m('p.helpText', t(`groups.${group}_help`)),
+          ['seasons', 'world', 'days', 'custom'].includes(group) && m('p.helpText', t(`groups.${group}_help`)),
           m(
             'ul.Festoon-looks',
             looks.map((l) => this.row(this.look(l.id)))
@@ -223,6 +223,11 @@ export default class FestoonPanel extends Component<Attrs> {
         )
       ),
 
+      (look.ornament === 'emoji' || look.corner === 'emoji') && [
+        this.field(t('edit.emoji_label'), m('input.FormControl.Festoon-emoji', { value: look.emoji || '', maxlength: 32, oninput: set('emoji') })),
+        m('p.helpText', t('edit.emoji_help')),
+      ],
+
       m('.Festoon-row', [
         this.field(
           t('edit.trim_label'),
@@ -290,7 +295,7 @@ export default class FestoonPanel extends Component<Attrs> {
 
   add() {
     const id = Math.random().toString(36).slice(2, 10);
-    this.custom.push({ id, name: '', enabled: true, from: '01-01', to: '01-01', primary: '#536f90', secondary: '#536f90', trim: 'none' });
+    this.custom.push({ id, name: '', enabled: true, from: '01-01', to: '01-01', primary: '#536f90', secondary: '#536f90', trim: 'none', emoji: '' });
     this.attrs.custom(JSON.stringify(this.custom));
     // The server lists a look once it is saved; until then show it from here.
     this.data.looks.push({
@@ -308,6 +313,7 @@ export default class FestoonPanel extends Component<Attrs> {
       hat: 'none',
       effect: 'none',
       trim: 'none',
+      emoji: '',
       date: { type: 'range', from: '01-01', to: '01-01' },
     });
     this.open = 'custom-' + id;

@@ -35,6 +35,9 @@ class DatesTest extends TestCase
         // 1 Farvardin as Iran's official calendar has it. 2025 is the close one:
         // the equinox came at 12:31 Tehran time, just after noon, so March 21.
         $add('Nowruz', ['type' => 'nowruz'], [2016 => '2016-03-20', 2017 => '2017-03-21', 2019 => '2019-03-21', 2020 => '2020-03-20', 2021 => '2021-03-21', 2023 => '2023-03-21', 2024 => '2024-03-20', 2025 => '2025-03-21', 2026 => '2026-03-21', 2027 => '2027-03-21', 2028 => '2028-03-20', 2029 => '2029-03-20', 2030 => '2030-03-21']);
+        // The 256th day: September 13, or the 12th in a leap year.
+        $add('Programmers\' Day', ['type' => 'yearday', 'day' => 256], [2024 => '2024-09-12', 2025 => '2025-09-13', 2026 => '2026-09-13', 2028 => '2028-09-12']);
+        $add('Software Freedom Day', ['type' => 'weekday', 'month' => 9, 'weekday' => 6, 'nth' => 3], [2024 => '2024-09-21', 2025 => '2025-09-20', 2026 => '2026-09-19']);
         $add('Leap day in a common year', ['type' => 'date', 'md' => '02-29'], [2026 => '2026-02-28', 2028 => '2028-02-29']);
 
         return $cases;

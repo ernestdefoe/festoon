@@ -15,7 +15,7 @@ final class Look
     public const CUSTOM_DEFAULTS = [
         'date' => ['type' => 'range', 'from' => '01-01', 'to' => '01-01'],
         'primary' => '#536f90', 'secondary' => '#536f90', 'garland' => 'none', 'ornament' => 'none',
-        'corner' => 'none', 'hat' => 'none', 'trim' => 'none', 'effect' => 'none',
+        'corner' => 'none', 'hat' => 'none', 'trim' => 'none', 'effect' => 'none', 'emoji' => '',
     ];
 
     /** @param array<string, mixed> $data */
@@ -56,6 +56,7 @@ final class Look
         }
 
         $d['trim'] = self::cleanTrim($changes['trim'] ?? $d['trim']);
+        $d['emoji'] = self::cleanEmoji($changes['emoji'] ?? $d['emoji'] ?? '');
         $d['name'] = mb_substr(trim(strip_tags((string) ($changes['name'] ?? ''))), 0, 60);
 
         if ($d['effect'] === 'fireworks' && ! is_array($d['sky'])) {
@@ -147,6 +148,18 @@ final class Look
         $colors = array_values(array_filter(array_map([self::class, 'color'], (array) $colors)));
 
         return $colors ? array_slice($colors, 0, 4) : 'none';
+    }
+
+    /**
+     * The administrator's emoji or symbol: up to sixteen code points (a family or a flag emoji is several), no spaces
+     * or control characters. Decorations writes each one as a CSS escape, so
+     * whatever survives here still cannot end the string it is put in.
+     */
+    private static function cleanEmoji(mixed $value): string
+    {
+        $clean = is_string($value) ? preg_replace('/[\p{Cc}\p{Z}]/u', '', $value) : null;
+
+        return $clean ? mb_substr($clean, 0, 16) : '';
     }
 
     private static function int(mixed $value, int $default, int $min, int $max): int

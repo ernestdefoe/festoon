@@ -17,10 +17,15 @@ namespace Ernestdefoe\Festoon\Look;
  * Hats are left off the religious and cultural new-year holidays on purpose.
  *
  * Nowruz runs from the day before 1 Farvardin through Sizdah Bedar, the 13th.
+ *
+ * The international days are one day each and, like the world holidays, off
+ * until an administrator turns them on. Most are fixed dates; Programmers'
+ * Day is the 256th day of the year and Software Freedom Day the third
+ * Saturday of September.
  */
 final class Catalogue
 {
-    public const GROUPS = ['holidays', 'seasons', 'world'];
+    public const GROUPS = ['holidays', 'seasons', 'world', 'days'];
 
     /** @return array<string, array<string, mixed>> */
     public static function all(): array
@@ -117,6 +122,32 @@ final class Catalogue
                 'primary' => '#00838f', 'secondary' => '#7cb342', 'garland' => 'tulips', 'ornament' => 'sabzeh',
                 'corner' => 'hyacinth', 'hat' => 'none', 'trim' => $stripe('#00838f', '#7cb342'), 'effect' => 'petals',
             ],
+
+            'education' => self::day(['type' => 'date', 'md' => '01-24'], '#283593', '#ffb300', 'cap'),
+            'piday' => self::day(['type' => 'date', 'md' => '03-14'], '#6a1b9a', '#ef6c00', 'pi'),
+            'artday' => self::day(['type' => 'date', 'md' => '04-15'], '#c2185b', '#1e88e5', 'palette'),
+            'chess' => self::day(['type' => 'date', 'md' => '07-20'], '#4e342e', '#8d6e63', 'chess'),
+            'photography' => self::day(['type' => 'date', 'md' => '08-19'], '#1565c0', '#ffb300', 'camera'),
+            'programmers' => self::day(['type' => 'yearday', 'day' => 256], '#00695c', '#2e7d32', 'code'),
+            'softwarefreedom' => self::day(['type' => 'weekday', 'month' => 9, 'weekday' => 6, 'nth' => 3], '#2e7d32', '#f9a825', 'unlock'),
+            'teachers' => self::day(['type' => 'date', 'md' => '10-05'], '#c62828', '#1565c0', 'apple'),
+            'science' => self::day(['type' => 'date', 'md' => '11-10'], '#1565c0', '#00acc1', 'atom'),
+        ];
+    }
+
+    /**
+     * An international day: its piece beside the forum's name and as the
+     * ornament, a stripe in its two colours, nothing falling.
+     *
+     * @param array<string, mixed> $date
+     * @return array<string, mixed>
+     */
+    private static function day(array $date, string $primary, string $secondary, string $icon): array
+    {
+        return [
+            'group' => 'days', 'date' => $date, 'before' => 0, 'after' => 0,
+            'primary' => $primary, 'secondary' => $secondary, 'garland' => 'none', 'ornament' => $icon,
+            'corner' => $icon, 'hat' => 'none', 'trim' => ['stripe' => [$primary, $secondary]], 'effect' => 'none',
         ];
     }
 
@@ -129,16 +160,19 @@ final class Catalogue
         };
     }
 
-    /** International looks wait for an administrator to switch them on. */
+    /** International looks and days wait for an administrator to switch them on. */
     public static function defaultEnabled(string $group): bool
     {
-        return $group !== 'world';
+        return $group !== 'world' && $group !== 'days';
     }
 
+    private const DAY_ICONS = ['pi', 'palette', 'camera', 'chess', 'code', 'unlock', 'apple', 'atom', 'cap'];
+
     // What each decoration slot may hold — anything else stored is treated as "none".
+    // "emoji" is the look's own emoji or symbol, typed in by the administrator.
     public const GARLANDS = ['none', 'lights', 'hearts', 'shamrocks', 'eggs', 'bunting-usa', 'bunting-halloween', 'leaves', 'snowflakes', 'lanterns', 'diyas', 'beads', 'fanous', 'tulips'];
-    public const ORNAMENTS = ['none', 'sparkles', 'bat', 'blossom', 'sun', 'leaves', 'menorah', 'crescent', 'sabzeh'];
-    public const CORNERS = ['none', 'holly', 'web', 'stars', 'sparkles', 'hearts', 'leaves', 'flake', 'lantern', 'diya', 'dreidel', 'crescent', 'shamrock', 'egg', 'sun', 'blossom', 'hyacinth'];
+    public const ORNAMENTS = ['none', 'sparkles', 'bat', 'blossom', 'sun', 'leaves', 'menorah', 'crescent', 'sabzeh', ...self::DAY_ICONS, 'emoji'];
+    public const CORNERS = ['none', 'holly', 'web', 'stars', 'sparkles', 'hearts', 'leaves', 'flake', 'lantern', 'diya', 'dreidel', 'crescent', 'shamrock', 'egg', 'sun', 'blossom', 'hyacinth', ...self::DAY_ICONS, 'emoji'];
     public const HATS = ['none', 'santa', 'witch', 'tophat', 'party', 'beanie', 'leprechaun', 'bunny'];
     public const EFFECTS = ['none', 'snow', 'leaves', 'petals', 'hearts', 'embers', 'confetti', 'fireworks'];
 }
