@@ -44,6 +44,18 @@ class DecorationsTest extends TestCase
         $this->assertStringNotContainsString('Header-title{display:flex', Decorations::css($config->look('christmas'), $config->parts()));
     }
 
+    public function test_falling_things_stay_under_the_header_modals_and_composer(): void
+    {
+        // They drew over core's and Bespoke's modals at 1100. Core's lowest
+        // layer is the header at 1000; everything above it must cover them.
+        $config = new Config(new ArraySettings([]));
+        $css = Decorations::css($config->look('thanksgiving'), $config->parts());
+
+        $this->assertMatchesRegularExpression('/\.Festoon-fall\{[^}]*pointer-events:none;z-index:(\d+);/', $css);
+        preg_match('/\.Festoon-fall\{[^}]*z-index:(\d+);/', $css, $m);
+        $this->assertLessThan(1000, (int) $m[1]);
+    }
+
     public function test_switched_off_parts_are_left_out(): void
     {
         $config = new Config(new ArraySettings([]));

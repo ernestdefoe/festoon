@@ -194,10 +194,14 @@ final class Decorations
         return $cps ? '"'.implode('', array_map(fn ($cp) => '\\'.dechex($cp).' ', $cps)).'"' : null;
     }
 
-    /** Falling things: a few dozen fixed spans, moved by transform only. */
+    /**
+     * Falling things: a few dozen fixed spans, moved by transform only. They
+     * sit just under the header (1000), so the header and its menus, the
+     * composer, dropdowns, modals and alerts all draw over them.
+     */
     private static function fallingCss(): string
     {
-        return self::ON.'.Festoon-fall{position:fixed;inset:0;pointer-events:none;z-index:1100;overflow:hidden}'
+        return self::ON.'.Festoon-fall{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden}'
             .'.Festoon-off .Festoon-fall{display:none}'
             .'.Festoon-fall i{position:absolute;top:-16px;left:var(--x);animation:festoon-fall var(--t) linear var(--d) infinite;opacity:.75}'
             .'@keyframes festoon-fall{to{transform:translate3d(var(--dx),calc(100vh + 32px),0) rotate(var(--r))}}'
