@@ -68,7 +68,23 @@ class Palette
             'text-on-light' => $bodyDark->hex(),
         ] + self::button($onPrimary, $p, 'button-primary');
 
-        $light = [
+        // High contrast modes start from the same derived colours and push them
+        // further; without these blocks the light/dark ones above would undo them.
+        return [
+            ':root' => $root,
+            '[data-theme^=light]' => self::light($p, $s, $mutedLight, $controlBgLight, $white),
+            '[data-theme^=light][data-colored-header=true]' => self::coloredHeader($p, $white),
+            '[data-theme^=dark]' => self::dark($p, $mutedDark, $mutedMoreDark, $controlBgDark, $bodyDark),
+            '[data-theme^=dark][data-colored-header=true]' => self::coloredHeader($p, $bodyDark),
+            '[data-theme=light-hc]' => self::highContrast($mutedLight->darken(20), $controlBgLight, $white, -1),
+            '[data-theme=dark-hc]' => self::highContrast($mutedDark->lighten(20), $controlBgDark, $bodyDark, 1),
+        ];
+    }
+
+    /** @return array<string, string> */
+    private static function light(Color $p, Color $s, Color $mutedLight, Color $controlBgLight, Color $white): array
+    {
+        return [
             'muted-color' => $mutedLight->hex(),
             'muted-color-light' => $mutedLight->lighten(10)->hex(),
             'muted-color-dark' => $mutedLight->darken(50)->hex(),
@@ -84,8 +100,12 @@ class Palette
             'overlay-bg' => $s->rgba(0.9),
         ] + self::button($mutedLight, $controlBgLight, 'button')
           + self::button($mutedLight, $white, 'button-inverted');
+    }
 
-        $dark = [
+    /** @return array<string, string> */
+    private static function dark(Color $p, Color $mutedDark, Color $mutedMoreDark, Color $controlBgDark, Color $bodyDark): array
+    {
+        return [
             'body-bg' => $bodyDark->hex(),
             'body-bg-shaded' => $bodyDark->darken(3)->hex(),
             'body-bg-light' => $bodyDark->lighten(5)->hex(),
@@ -109,24 +129,6 @@ class Palette
             'discussion-title-color' => Color::parse('#dddddd')->mix($bodyDark, 55)->hex(),
         ] + self::button($mutedDark, $controlBgDark, 'button')
           + self::button($mutedDark, $bodyDark, 'button-inverted');
-
-        $coloredLight = self::coloredHeader($p, $white);
-        $coloredDark = self::coloredHeader($p, $bodyDark);
-
-        // High contrast modes start from the same derived colours and push them
-        // further; without these blocks the light/dark ones above would undo them.
-        $lightHc = self::highContrast($mutedLight->darken(20), $controlBgLight, $white, -1);
-        $darkHc = self::highContrast($mutedDark->lighten(20), $controlBgDark, $bodyDark, 1);
-
-        return [
-            ':root' => $root,
-            '[data-theme^=light]' => $light,
-            '[data-theme^=light][data-colored-header=true]' => $coloredLight,
-            '[data-theme^=dark]' => $dark,
-            '[data-theme^=dark][data-colored-header=true]' => $coloredDark,
-            '[data-theme=light-hc]' => $lightHc,
-            '[data-theme=dark-hc]' => $darkHc,
-        ];
     }
 
     /**

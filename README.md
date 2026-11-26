@@ -34,6 +34,9 @@ festival with its own dates, colors and decorations, including an emoji, a
 symbol or an SVG picture of your own beside the forum's name and as the
 ornament. An SVG is cleaned on the server and drawn as an image, so nothing in
 it can run, and any part drawn in `currentColor` takes the look's main color.
+Your emoji or SVG can also move: float up and down, sway, spin slowly, pulse or
+twinkle, at a slow, normal or fast speed. The logo and the forum's name never
+shift while it moves.
 
 Hover over the picture beside the forum's name, or tap it on a phone, and it
 names the occasion.
@@ -143,11 +146,14 @@ and the fireworks pause when the tab is hidden or the banner is scrolled away.
   loaded. The tests check that a page costs the same number of queries with
   Festoon on or off.
 - **Under 1 KB of JavaScript** on every page (gzipped). The fireworks script,
-  1.5 KB, is added only on days that have fireworks.
+  under 2 KB, is added only on days that have fireworks.
 - **Decorations are one cached stylesheet per look**, about 2 KB gzipped,
-  written to your assets folder once and then served like Flarum's own CSS.
+  written to your assets folder when Festoon is enabled, when the cache is
+  cleared and when you save its settings, then served like Flarum's own CSS.
+  A page request never writes a file.
 - **Every animation moves or fades only**, which the browser handles without
-  repainting the page.
+  repainting the page. Members whose device asks for less motion get still
+  decorations.
 - **Colors stay readable.** Flarum works out muted text, control backgrounds
   and dark mode from your two colors when it builds the stylesheet. Festoon
   works them out the same way for each look, in light, dark and high-contrast

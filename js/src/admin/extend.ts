@@ -2,8 +2,6 @@ import app from 'flarum/admin/app';
 import Admin from 'flarum/common/extenders/Admin';
 import FestoonPanel from './FestoonPanel';
 
-declare const m: import('mithril').Static;
-
 type Streams = { setting: (key: string, fallback?: string) => (value?: string) => string };
 
 export default [

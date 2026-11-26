@@ -4,8 +4,6 @@ import WelcomeHero from 'flarum/forum/components/WelcomeHero';
 import FieldSet from 'flarum/common/components/FieldSet';
 import Switch from 'flarum/common/components/Switch';
 
-declare const m: import('mithril').Static;
-
 interface Payload {
   look?: string;
   preview?: boolean;
@@ -78,7 +76,7 @@ app.initializers.add('ernestdefoe-festoon', () => {
   let hero: HTMLElement | null = null;
   let stop: (() => void) | null = null;
   const start = () => {
-    const show = (window as any).FestoonFireworks as ((el: HTMLElement, colors: string[]) => () => void) | undefined;
+    const show = (window as unknown as { FestoonFireworks?: (el: HTMLElement, colors: string[]) => () => void }).FestoonFireworks;
     if (show && hero && !stop && hero.isConnected && !stillPlease() && !root.classList.contains('Festoon-off')) stop = show(hero, sky);
   };
   document.addEventListener('festoon:fireworks', start);
@@ -93,3 +91,5 @@ app.initializers.add('ernestdefoe-festoon', () => {
     stop = hero = null;
   });
 });
+
+export { default as extend } from './extend';

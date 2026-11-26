@@ -3,8 +3,6 @@ import Component from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
 import Switch from 'flarum/common/components/Switch';
 
-declare const m: import('mithril').Static;
-
 type Stream = (value?: string) => string;
 type Look = Record<string, any> & { id: string; group: string };
 
@@ -21,7 +19,7 @@ interface Data {
   today: string | null;
   timezone: string;
   timezones: string[];
-  options: Record<'garland' | 'ornament' | 'corner' | 'hat' | 'effect', string[]>;
+  options: Record<'garland' | 'ornament' | 'corner' | 'hat' | 'effect' | 'motion' | 'speed', string[]>;
   intl: boolean;
 }
 
@@ -42,6 +40,30 @@ const parse = <T>(stream: Stream, fallback: T): T => {
 
 const day = (ymd: string) =>
   new Date(ymd + 'T12:00:00').toLocaleDateString(app.translator.getLocale() || undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const shift = (s: string, days: number) => {
+  const d = new Date(s + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d;
+};
+
+/** The same 0 to 60 the server holds Days before and after to. */
+const clamp = (v: any) => Math.max(0, Math.min(60, Number(v) || 0));
+
+/** The next window of a month-and-day rule ("MM-DD" to "MM-DD"), opened early and held late. */
+const yearly = (from: string, to: string, before: number, after: number): [string, string] | null => {
+  const today = ymd(new Date());
+  const year = new Date().getFullYear();
+  for (const y of [year - 1, year, year + 1]) {
+    const start = shift(`${y}-${from}`, -before);
+    const end = shift(`${y}-${to}`, after);
+    if (end < start) end.setFullYear(end.getFullYear() + 1); // December 21 to March 19
+    if (ymd(end) >= today) return [ymd(start), ymd(end)];
+  }
+  return null;
+};
 
 /**
  * Every look in four groups, each with its next dates, a switch, Preview and
@@ -97,7 +119,6 @@ export default class FestoonPanel extends Component<Attrs> {
   }
 
   view() {
-    const parts = parse<Record<string, boolean>>(this.attrs.parts, {});
     const today = this.data.today ? this.look(this.data.today) : null;
     const allLooks = [
       ...this.data.looks.filter((l) => l.group !== 'custom'),
@@ -108,17 +129,29 @@ export default class FestoonPanel extends Component<Attrs> {
       m('p.helpText', t('intro')),
       m('p.Festoon-today', today ? t('today', { name: this.name(today) }) : t('today_none')),
       !this.data.intl && m('.Alert.Alert--warning', t('no_intl')),
+      this.timezoneField(),
+      this.partsSection(),
+      GROUPS.map((group) => this.groupSection(group, allLooks)),
+    ]);
+  }
 
-      m('.Form-group', [
-        m('label', t('timezone_label')),
-        m(
-          'select.FormControl',
-          { value: this.attrs.timezone() || this.data.timezone, onchange: (e: Event) => this.attrs.timezone((e.target as HTMLSelectElement).value) },
-          this.data.timezones.map((tz) => m('option', { value: tz }, tz))
-        ),
-        m('p.helpText', t('timezone_help')),
-      ]),
+  timezoneField() {
+    return m('.Form-group', [
+      m('label', t('timezone_label')),
+      m(
+        'select.FormControl',
+        { value: this.attrs.timezone() || this.data.timezone, onchange: (e: Event) => this.attrs.timezone((e.target as HTMLSelectElement).value) },
+        this.data.timezones.map((tz) => m('option', { value: tz }, tz))
+      ),
+      m('p.helpText', t('timezone_help')),
+    ]);
+  }
 
+  /** The forum-wide switches for each kind of decoration. */
+  partsSection() {
+    const parts = parse<Record<string, boolean>>(this.attrs.parts, {});
+
+    return [
       m('h3', t('parts.heading')),
       m(
         '.Festoon-parts',
@@ -133,19 +166,18 @@ export default class FestoonPanel extends Component<Attrs> {
           ])
         )
       ),
+    ];
+  }
 
-      GROUPS.map((group) => {
-        const looks = allLooks.filter((l) => l.group === group);
-        return m('section.Festoon-group', [
-          m('h3', t(`groups.${group}`)),
-          ['seasons', 'world', 'days', 'custom'].includes(group) && m('p.helpText', t(`groups.${group}_help`)),
-          m(
-            'ul.Festoon-looks',
-            looks.map((l) => this.row(this.look(l.id)))
-          ),
-          group === 'custom' && m(Button, { className: 'Button', icon: 'fas fa-plus', onclick: () => this.add() }, t('look.add')),
-        ]);
-      }),
+  groupSection(group: string, allLooks: Look[]) {
+    return m('section.Festoon-group', [
+      m('h3', t(`groups.${group}`)),
+      ['seasons', 'world', 'days', 'custom'].includes(group) && m('p.helpText', t(`groups.${group}_help`)),
+      m(
+        'ul.Festoon-looks',
+        allLooks.filter((l) => l.group === group).map((l) => this.row(this.look(l.id)))
+      ),
+      group === 'custom' && m(Button, { className: 'Button', icon: 'fas fa-plus', onclick: () => this.add() }, t('look.add')),
     ]);
   }
 
@@ -155,30 +187,12 @@ export default class FestoonPanel extends Component<Attrs> {
    * server's answer, moved by however much Days before or after changed.
    */
   next(look: Look): [string, string] | null {
-    const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const shift = (s: string, days: number) => {
-      const d = new Date(s + 'T12:00:00');
-      d.setDate(d.getDate() + days);
-      return d;
-    };
-    const today = ymd(new Date());
-    // The same 0 to 60 the server holds them to.
-    const clamp = (v: any) => Math.max(0, Math.min(60, Number(v) || 0));
     const before = clamp(look.before);
     const after = clamp(look.after);
     const type = look.date?.type;
 
-    if (type === 'range' || type === 'date') {
-      const [from, to] = type === 'range' ? [look.date.from, look.date.to] : [look.date.md, look.date.md];
-      const year = new Date().getFullYear();
-      for (const y of [year - 1, year, year + 1]) {
-        const start = shift(`${y}-${from}`, type === 'range' ? 0 : -before);
-        const end = shift(`${y}-${to}`, type === 'range' ? 0 : after);
-        if (end < start) end.setFullYear(end.getFullYear() + 1); // December 21 to March 19
-        if (ymd(end) >= today) return [ymd(start), ymd(end)];
-      }
-      return null;
-    }
+    if (type === 'range') return yearly(look.date.from, look.date.to, 0, 0);
+    if (type === 'date') return yearly(look.date.md, look.date.md, before, after);
 
     const saved = this.data.next[look.id];
     const base = this.data.looks.find((l) => l.id === look.id)!;
@@ -213,21 +227,64 @@ export default class FestoonPanel extends Component<Attrs> {
     ]);
   }
 
+  set(id: string, field: string) {
+    return (e: Event) => this.change(id, field, (e.target as HTMLInputElement).value);
+  }
+
+  num(id: string, field: string) {
+    return (e: Event) => this.change(id, field, parseInt((e.target as HTMLInputElement).value, 10) || 0);
+  }
+
   editor(look: Look) {
     const id = look.id;
-    const set = (field: string) => (e: Event) => this.change(id, field, (e.target as HTMLInputElement).value);
-    const num = (field: string) => (e: Event) => this.change(id, field, parseInt((e.target as HTMLInputElement).value, 10) || 0);
-    const isRange = look.date?.type === 'range';
-    const trim = look.trim;
-    const trimKind = trim === 'snow' ? 'snow' : Array.isArray(trim) || trim?.stripe ? 'stripe' : 'none';
-    const stripes: string[] = Array.isArray(trim) ? trim : trim?.stripe || [look.primary, look.secondary];
 
     return m('.Festoon-editor', [
       look.group === 'custom' &&
-        this.field(t('edit.name_label'), m('input.FormControl', { value: look.name || '', maxlength: 60, oninput: set('name') })),
+        this.field(t('edit.name_label'), m('input.FormControl', { value: look.name || '', maxlength: 60, oninput: this.set(id, 'name') })),
+      this.datesSection(look),
+      m('.Festoon-row', [
+        this.field(t('edit.primary_label'), m('input.FormControl[type=color]', { value: look.primary, oninput: this.set(id, 'primary') })),
+        this.field(t('edit.secondary_label'), m('input.FormControl[type=color]', { value: look.secondary, oninput: this.set(id, 'secondary') })),
+        this.field(
+          t('edit.priority_label'),
+          m('input.FormControl[type=number][min=0][max=100]', { value: look.priority, oninput: this.num(id, 'priority') })
+        ),
+      ]),
+      m('p.helpText', t('edit.priority_help')),
+      m(
+        '.Festoon-row',
+        SLOTS.map((slot) =>
+          this.field(
+            t(`edit.${slot}_label`),
+            this.select(look, slot, this.data.options[slot], (o) => t(`options.${o}`))
+          )
+        )
+      ),
+      this.ownPicture(look),
+      this.trimSection(look),
+      m('.Festoon-actions', [
+        look.group === 'custom'
+          ? m(Button, { className: 'Button Button--danger', icon: 'fas fa-trash', onclick: () => this.remove(id) }, t('look.delete'))
+          : this.overrides[id] && m(Button, { className: 'Button', icon: 'fas fa-undo', onclick: () => this.reset(id) }, t('look.reset')),
+      ]),
+    ]);
+  }
 
-      isRange
-        ? m('.Festoon-row', [
+  select(look: Look, field: string, options: string[], label: (o: string) => any, className = '') {
+    return m(
+      'select.FormControl' + className,
+      { value: look[field], onchange: this.set(look.id, field) },
+      options.map((o) => m('option', { value: o }, label(o)))
+    );
+  }
+
+  /** A range's two ends, or a holiday's day and how long it is up around it. */
+  datesSection(look: Look) {
+    const id = look.id;
+    const type = look.date?.type;
+    const fields =
+      type === 'range'
+        ? [
             this.field(
               t('edit.from_label'),
               this.monthDay(look.date.from, (v) => this.change(id, 'from', v))
@@ -236,94 +293,99 @@ export default class FestoonPanel extends Component<Attrs> {
               t('edit.to_label'),
               this.monthDay(look.date.to, (v) => this.change(id, 'to', v))
             ),
-          ])
-        : m('.Festoon-row', [
-            look.date?.type === 'date' &&
+          ]
+        : [
+            type === 'date' &&
               this.field(
                 t('edit.day_label'),
                 this.monthDay(look.date.md, (v) => this.change(id, 'md', v))
               ),
-            this.field(t('edit.before_label'), m('input.FormControl[type=number][min=0][max=60]', { value: look.before, oninput: num('before') })),
-            this.field(t('edit.after_label'), m('input.FormControl[type=number][min=0][max=60]', { value: look.after, oninput: num('after') })),
-          ]),
-      m('p.helpText', isRange ? t('edit.dates_help') : look.date?.type === 'date' ? t('edit.day_help') : t('edit.window_help')),
+            this.field(
+              t('edit.before_label'),
+              m('input.FormControl[type=number][min=0][max=60]', { value: look.before, oninput: this.num(id, 'before') })
+            ),
+            this.field(
+              t('edit.after_label'),
+              m('input.FormControl[type=number][min=0][max=60]', { value: look.after, oninput: this.num(id, 'after') })
+            ),
+          ];
 
-      m('.Festoon-row', [
-        this.field(t('edit.primary_label'), m('input.FormControl[type=color]', { value: look.primary, oninput: set('primary') })),
-        this.field(t('edit.secondary_label'), m('input.FormControl[type=color]', { value: look.secondary, oninput: set('secondary') })),
-        this.field(t('edit.priority_label'), m('input.FormControl[type=number][min=0][max=100]', { value: look.priority, oninput: num('priority') })),
-      ]),
-      m('p.helpText', t('edit.priority_help')),
+    return [
+      m('.Festoon-row', fields),
+      m('p.helpText', type === 'range' ? t('edit.dates_help') : type === 'date' ? t('edit.day_help') : t('edit.window_help')),
+    ];
+  }
 
-      m(
-        '.Festoon-row',
-        SLOTS.map((slot) =>
-          this.field(
-            t(`edit.${slot}_label`),
-            m(
-              'select.FormControl',
-              { value: look[slot], onchange: set(slot) },
-              this.data.options[slot].map((o) => m('option', { value: o }, t(`options.${o}`)))
-            )
-          )
-        )
-      ),
+  /** Your emoji or SVG picture: what it is, its size beside the name, and how it moves. */
+  ownPicture(look: Look) {
+    const id = look.id;
+    const uses = (kind: string) => look.ornament === kind || look.corner === kind;
 
-      (look.ornament === 'emoji' || look.corner === 'emoji') && [
-        this.field(t('edit.emoji_label'), m('input.FormControl.Festoon-emoji', { value: look.emoji || '', maxlength: 32, oninput: set('emoji') })),
+    return [
+      uses('emoji') && [
+        this.field(
+          t('edit.emoji_label'),
+          m('input.FormControl.Festoon-emoji', { value: look.emoji || '', maxlength: 32, oninput: this.set(id, 'emoji') })
+        ),
         m('p.helpText', t('edit.emoji_help')),
       ],
-      (look.ornament === 'svg' || look.corner === 'svg') && [
+      uses('svg') && [
         this.field(
           t('edit.svg_label'),
-          m('textarea.FormControl.Festoon-svg', { value: look.svg || '', rows: 5, maxlength: 20000, spellcheck: false, oninput: set('svg') })
+          m('textarea.FormControl.Festoon-svg', { value: look.svg || '', rows: 5, maxlength: 20000, spellcheck: false, oninput: this.set(id, 'svg') })
         ),
         m('p.helpText', t('edit.svg_help')),
       ],
-      (look.ornament === 'emoji' || look.ornament === 'svg') && [
+      ['emoji', 'svg'].includes(look.ornament) && [
         this.field(
           t('edit.size_label'),
-          m('input.FormControl.Festoon-size[type=number][min=16][max=64]', { value: look.size ?? 36, oninput: num('size') })
+          m('input.FormControl.Festoon-size[type=number][min=16][max=64]', { value: look.size, oninput: this.num(id, 'size') })
         ),
         m('p.helpText', t('edit.size_help')),
       ],
-
-      m('.Festoon-row', [
-        this.field(
-          t('edit.trim_label'),
-          m(
-            'select.FormControl',
-            {
-              value: trimKind,
-              onchange: (e: Event) => {
-                const v = (e.target as HTMLSelectElement).value;
-                this.change(id, 'trim', v === 'stripe' ? stripes : v);
-              },
-            },
-            ['snow', 'stripe', 'none'].map((o) => m('option', { value: o }, t(`edit.trim_${o}`)))
-          )
-        ),
-        trimKind === 'stripe' &&
-          stripes.map((c, i) =>
-            this.field(
-              '',
-              m('input.FormControl[type=color]', {
-                value: c,
-                oninput: (e: Event) => {
-                  const next = [...stripes];
-                  next[i] = (e.target as HTMLInputElement).value;
-                  this.change(id, 'trim', next);
-                },
-              })
-            )
+      (uses('emoji') || uses('svg')) && [
+        m('.Festoon-row', [
+          this.field(
+            t('edit.motion_label'),
+            this.select(look, 'motion', this.data.options.motion, (o) => t(`edit.motion_${o}`), '.Festoon-motion')
           ),
-      ]),
+          look.motion !== 'none' &&
+            this.field(
+              t('edit.speed_label'),
+              this.select(look, 'speed', this.data.options.speed, (o) => t(`edit.speed_${o}`), '.Festoon-speed')
+            ),
+        ]),
+        m('p.helpText', t('edit.motion_help')),
+      ],
+    ];
+  }
 
-      m('.Festoon-actions', [
-        look.group === 'custom'
-          ? m(Button, { className: 'Button Button--danger', icon: 'fas fa-trash', onclick: () => this.remove(id) }, t('look.delete'))
-          : this.overrides[id] && m(Button, { className: 'Button', icon: 'fas fa-undo', onclick: () => this.reset(id) }, t('look.reset')),
-      ]),
+  trimSection(look: Look) {
+    const trim = look.trim;
+    const kind = trim === 'snow' ? 'snow' : Array.isArray(trim) || trim?.stripe ? 'stripe' : 'none';
+    const stripes: string[] = Array.isArray(trim) ? trim : trim?.stripe || [look.primary, look.secondary];
+    const setStripe = (i: number) => (e: Event) => {
+      const next = [...stripes];
+      next[i] = (e.target as HTMLInputElement).value;
+      this.change(look.id, 'trim', next);
+    };
+
+    return m('.Festoon-row', [
+      this.field(
+        t('edit.trim_label'),
+        m(
+          'select.FormControl',
+          {
+            value: kind,
+            onchange: (e: Event) => {
+              const v = (e.target as HTMLSelectElement).value;
+              this.change(look.id, 'trim', v === 'stripe' ? stripes : v);
+            },
+          },
+          ['snow', 'stripe', 'none'].map((o) => m('option', { value: o }, t(`edit.trim_${o}`)))
+        )
+      ),
+      kind === 'stripe' && stripes.map((c, i) => this.field('', m('input.FormControl[type=color]', { value: c, oninput: setStripe(i) }))),
     ]);
   }
 
@@ -387,6 +449,8 @@ export default class FestoonPanel extends Component<Attrs> {
       emoji: '',
       svg: '',
       size: 36,
+      motion: 'none',
+      speed: 'normal',
       date: { type: 'range', from: '01-01', to: '01-01' },
     });
     this.open = 'custom-' + id;

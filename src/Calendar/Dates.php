@@ -4,6 +4,7 @@ namespace Ernestdefoe\Festoon\Calendar;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Ernestdefoe\Festoon\Config;
 use Illuminate\Contracts\Cache\Repository;
 use IntlCalendar;
 
@@ -69,10 +70,10 @@ class Dates
         return $ymd === null ? null : new DateTimeImmutable($ymd, $this->tz);
     }
 
-    /** Changes with this code, so an update that corrects a date is not served a stale one. */
+    /** Changes with each release, so an update that corrects a date is not served a stale one. */
     protected function cacheKey(): string
     {
-        return 'ernestdefoe-festoon.dates.'.substr(md5(@filemtime(__FILE__).'-'.@filemtime(__DIR__.'/Astronomy.php')), 0, 8);
+        return 'ernestdefoe-festoon.dates.'.substr(md5(Config::version()), 0, 8);
     }
 
     /** @param array<string, mixed> $rule */

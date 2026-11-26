@@ -7,11 +7,10 @@ use Ernestdefoe\Festoon\Look\Look;
 use Ernestdefoe\Festoon\Look\Schedule;
 use Ernestdefoe\Festoon\Style\Decorations;
 use Ernestdefoe\Festoon\Style\Palette;
+use Ernestdefoe\Festoon\Style\Publisher;
 use Flarum\Frontend\Document;
 use Flarum\Http\RequestUtil;
-use Illuminate\Contracts\Filesystem\Cloud;
-use Illuminate\Contracts\Filesystem\Factory;
-use Illuminate\Contracts\Filesystem\Filesystem;
+use Flarum\User\User;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -22,8 +21,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *
  * - The colours go inline in <head>, after the forum stylesheet, where core
  *   intends inline overrides to win. They are a few hundred bytes.
- * - The decorations are a stylesheet file per look, written once to assets/
- *   and cached by the browser like the forum's own CSS.
+ * - The decorations are a stylesheet file per look, written to assets/ by
+ *   Style\Publisher and cached by the browser like the forum's own CSS. If it
+ *   is not there yet (an update before the cache was cleared), the same rules
+ *   go inline, so the page is right either way and a request never writes.
  * - Falling snow, leaves and the rest are a few dozen empty spans before
  *   </body>, moved by CSS. Only fireworks need a script, and it is added
  *   only on a day that has them.
@@ -32,11 +33,8 @@ class InjectFestoon
 {
     public const PREVIEW = 'festoon';
 
-    protected Filesystem $assets;
-
-    public function __construct(protected Config $config, protected Schedule $schedule, Factory $filesystems, protected TranslatorInterface $translator)
+    public function __construct(protected Config $config, protected Schedule $schedule, protected Publisher $publisher, protected TranslatorInterface $translator)
     {
-        $this->assets = $filesystems->disk('flarum-assets');
     }
 
     public function __invoke(Document $document, Request $request): void
@@ -46,13 +44,7 @@ class InjectFestoon
         }
 
         $actor = RequestUtil::getActor($request);
-        $preview = null;
-        $asked = $request->getQueryParams()[self::PREVIEW] ?? null;
-
-        if (is_string($asked) && $actor->isAdmin()) {
-            $preview = $this->config->look($asked);
-        }
-
+        $preview = $this->preview($actor, $request);
         $look = $preview ?? $this->schedule->active();
 
         if ($look === null) {
@@ -70,15 +62,7 @@ class InjectFestoon
         if ($off) {
             $document->extraAttributes['class'][] = 'Festoon-off';
         } else {
-            $document->head[] = '<link rel="stylesheet" href="'.e($this->stylesheet($look, $parts)).'">';
-
-            if ($parts['effects']) {
-                $document->foot[] = self::falling($look->get('effect'));
-
-                if ($look->get('effect') === 'fireworks') {
-                    $document->foot[] = '<script defer src="'.e($this->publish(__DIR__.'/../../js/dist/fireworks.js', 'fireworks', 'js')).'"></script>';
-                }
-            }
+            $this->decorate($document, $look, $parts);
         }
 
         // The occasion's name, for the preview notice and for the tip on the
@@ -97,72 +81,41 @@ class InjectFestoon
         }
     }
 
+    /** A look an admin asked to see today with ?festoon=id. */
+    protected function preview(User $actor, Request $request): ?Look
+    {
+        $asked = $request->getQueryParams()[self::PREVIEW] ?? null;
+
+        return is_string($asked) && $actor->isAdmin() ? $this->config->look($asked) : null;
+    }
+
+    /** @param array<string, bool> $parts */
+    protected function decorate(Document $document, Look $look, array $parts): void
+    {
+        $path = $this->publisher->stylesheet($look, $parts);
+        $document->head[] = $this->publisher->has($path)
+            ? '<link rel="stylesheet" href="'.e($this->publisher->url($path)).'">'
+            // Rules only: escaped emoji and URL-encoded pictures, never a "<".
+            : '<style id="festoon-decorations">'.Decorations::css($look, $parts).'</style>';
+
+        if (! $parts['effects']) {
+            return;
+        }
+
+        $document->foot[] = self::falling($look->get('effect'));
+
+        if ($look->get('effect') === 'fireworks') {
+            $script = $this->publisher->fireworks();
+            $document->foot[] = $this->publisher->has($script)
+                ? '<script defer src="'.e($this->publisher->url($script)).'"></script>'
+                // Until the next publish, inline: only on a fireworks day, and only then.
+                : '<script>'.str_replace('</', '<\\/', $this->publisher->fireworksSource()).'</script>';
+        }
+    }
+
     protected function name(Look $look): string
     {
         return $look->group() === 'custom' ? $look->name() : $this->translator->trans('ernestdefoe-festoon.lib.looks.'.$look->id);
-    }
-
-    /**
-     * The URL of this look's decoration stylesheet, writing it first if this
-     * is the first request to need it. The name carries a hash of everything
-     * that shapes it, so a changed setting or a new version of Festoon is a
-     * new file and no browser keeps a stale one.
-     *
-     * @param array<string, bool> $parts
-     */
-    protected function stylesheet(Look $look, array $parts): string
-    {
-        $version = @filemtime(__DIR__.'/../Style/Decorations.php').'-'.@filemtime(__DIR__.'/../Style/Art.php');
-        $hash = substr(md5(json_encode([$look->toArray(), $parts, $version]) ?: ''), 0, 10);
-
-        return $this->store($look->id, $hash.'.css', fn () => Decorations::css($look, $parts));
-    }
-
-    /** A file shipped in the package, copied to assets/ under a name that changes with it. */
-    protected function publish(string $source, string $name, string $ext): string
-    {
-        $hash = substr(md5(@filemtime($source).'-'.@filesize($source)), 0, 10);
-
-        return $this->store($name, "$hash.$ext", function () use ($source) {
-            $contents = @file_get_contents($source);
-
-            // A missing build must fail loudly, not publish an empty file that
-            // every visitor would then be served until the next update.
-            if ($contents === false || $contents === '') {
-                throw new \RuntimeException("Festoon cannot read $source");
-            }
-
-            return $contents;
-        });
-    }
-
-    /**
-     * Write a file to assets/ once, the first time a page needs it, and return
-     * its URL. Writing a new version removes the old ones of the same name, so
-     * changing a look's settings does not leave a trail of stale files.
-     *
-     * Two first requests at once may both write: the name is a hash of the
-     * contents, so they write the same bytes to the same path, and a delete
-     * of an already-deleted old version is a no-op. The current file is never
-     * among the ones cleared, so neither request removes what the other just
-     * wrote. No lock is needed.
-     */
-    protected function store(string $name, string $suffix, callable $contents): string
-    {
-        $dir = 'extensions/ernestdefoe-festoon';
-        $path = "$dir/$name-$suffix";
-
-        if (! $this->assets->exists($path)) {
-            foreach ($this->assets->files($dir) as $old) {
-                if ($old !== $path && str_starts_with(basename($old), "$name-") && preg_match('/^[0-9a-f]{10}\./', substr(basename($old), strlen($name) + 1))) {
-                    $this->assets->delete($old);
-                }
-            }
-            $this->assets->put($path, $contents());
-        }
-
-        // Flarum's assets disk is a Cloud disk, which knows its public URL.
-        return $this->assets instanceof Cloud ? $this->assets->url($path) : '/assets/'.$path;
     }
 
     /** The falling layer: empty spans, each with its own lane, speed and delay. */

@@ -2,6 +2,7 @@
 
 namespace Ernestdefoe\Festoon;
 
+use Composer\InstalledVersions;
 use Ernestdefoe\Festoon\Look\Catalogue;
 use Ernestdefoe\Festoon\Look\Look;
 use Flarum\Settings\SettingsRepositoryInterface;
@@ -33,7 +34,17 @@ class Config
 
     public function enabled(): bool
     {
-        return (bool) $this->settings->get(self::ENABLED, true);
+        return (bool) $this->settings->get(self::ENABLED);
+    }
+
+    /** The installed release (its commit), so an update renames every published file and cache key. */
+    public static function version(): string
+    {
+        $package = 'ernestdefoe/festoon';
+
+        return InstalledVersions::isInstalled($package)
+            ? (string) (InstalledVersions::getReference($package) ?? InstalledVersions::getPrettyVersion($package))
+            : '';
     }
 
     /**

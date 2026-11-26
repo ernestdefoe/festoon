@@ -39,28 +39,17 @@ final class Look
         $d['before'] = self::int($changes['before'] ?? null, (int) $d['before'], 0, 60);
         $d['after'] = self::int($changes['after'] ?? null, (int) $d['after'], 0, 60);
 
-        if (($d['date']['type'] ?? '') === 'range') {
-            foreach (['from', 'to'] as $end) {
-                $md = (string) ($changes[$end] ?? '');
-                if (preg_match('/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', $md)) {
-                    $d['date'][$end] = $md;
-                }
-            }
-        }
-
-        // A fixed-date holiday can move to the day a country keeps it,
-        // like Christmas on December 24.
-        if (($d['date']['type'] ?? '') === 'date' && preg_match('/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', (string) ($changes['md'] ?? ''))) {
-            $d['date']['md'] = $changes['md'];
-        }
+        $d['date'] = self::cleanDate($d['date'], $changes);
 
         foreach (['primary', 'secondary'] as $c) {
             $d[$c] = self::color($changes[$c] ?? null) ?? $d[$c];
         }
 
-        foreach (['garland' => Catalogue::GARLANDS, 'ornament' => Catalogue::ORNAMENTS, 'corner' => Catalogue::CORNERS, 'hat' => Catalogue::HATS, 'effect' => Catalogue::EFFECTS] as $slot => $allowed) {
+        $d += ['motion' => 'none', 'speed' => 'normal'];
+        $slots = ['garland' => Catalogue::GARLANDS, 'ornament' => Catalogue::ORNAMENTS, 'corner' => Catalogue::CORNERS, 'hat' => Catalogue::HATS, 'effect' => Catalogue::EFFECTS, 'motion' => Catalogue::MOTIONS, 'speed' => Catalogue::SPEEDS];
+        foreach ($slots as $slot => $allowed) {
             $value = $changes[$slot] ?? $d[$slot];
-            $d[$slot] = in_array($value, $allowed, true) ? $value : 'none';
+            $d[$slot] = in_array($value, $allowed, true) ? $value : ($slot === 'speed' ? 'normal' : 'none');
         }
 
         $d['trim'] = self::cleanTrim($changes['trim'] ?? $d['trim']);
@@ -119,6 +108,32 @@ final class Look
     public function after(): int
     {
         return $this->data['after'];
+    }
+
+    /**
+     * A range's ends, or a fixed-date holiday moved to the day a country
+     * keeps it, like Christmas on December 24. Other rules are not editable.
+     *
+     * @param array<string, mixed> $date
+     * @param array<string, mixed> $changes
+     * @return array<string, mixed>
+     */
+    private static function cleanDate(array $date, array $changes): array
+    {
+        $ends = match ($date['type'] ?? '') {
+            'range' => ['from', 'to'],
+            'date' => ['md'],
+            default => [],
+        };
+
+        foreach ($ends as $end) {
+            $md = (string) ($changes[$end] ?? '');
+            if (preg_match('/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', $md)) {
+                $date[$end] = $md;
+            }
+        }
+
+        return $date;
     }
 
     public function get(string $slot): string

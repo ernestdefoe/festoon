@@ -32,6 +32,8 @@ class AdminPayload
                 'corner' => Catalogue::CORNERS,
                 'hat' => Catalogue::HATS,
                 'effect' => Catalogue::EFFECTS,
+                'motion' => Catalogue::MOTIONS,
+                'speed' => Catalogue::SPEEDS,
             ],
             'intl' => extension_loaded('intl'),
         ];
